@@ -41,7 +41,7 @@ def find_season_id(base_url, headers):
     return season_id
 season_id = find_season_id(base_url, headers)
 
-#Find 25/26 Premier League teams that survived relegation
+#Find 25/26 Premier League teams 
 team_ids = []
 def find_teams(base_url, headers, teams):
     response = requests.get(f"{base_url}/competitions/{league_id}/seasons/{season_id}/standings", headers=headers)
@@ -49,9 +49,8 @@ def find_teams(base_url, headers, teams):
         content = response.json()
         data = content['data']
         for team in data:
-            if team['position'] < 18:
-                team_id = team['team']['id']
-                teams.append(team_id)
+            team_id = team['team']['id']
+            teams.append(team_id)
     return team_ids
 team_ids = find_teams(base_url, headers, team_ids)
 print(team_ids)
