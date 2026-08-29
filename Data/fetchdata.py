@@ -1,6 +1,7 @@
 import requests
 import time
 from pprint import pprint
+import pandas as pd
 
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {
@@ -80,6 +81,7 @@ def find_player_stats(base_url, headers):
                 nineties_played = data['minutes_played'] / 90
                 player_stats.append({
                     'player_id': data['player_id'],
+                    'name': player['name'],
                     'position': data['position'],
                     'goals': data['scoring']['goals'] / nineties_played,
                     'assists': data['scoring']['assists'] / nineties_played,
@@ -104,3 +106,5 @@ def find_player_stats(base_url, headers):
     return player_stats
 player_stats = find_player_stats(base_url, headers)
 pprint(player_stats)
+df = pd.DataFrame(player_stats)
+df.to_csv('player_stats.csv', index = False)
