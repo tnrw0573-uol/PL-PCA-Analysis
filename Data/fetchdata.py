@@ -17,14 +17,15 @@ def response_success(response):
     return False
 
 #Find Premier League ID
-def find_pl_id(base_url, headers):
+season_id = ''
+def find_pl_id(base_url, headers, season_id):
     response = requests.get(f"{base_url}/competitions", headers=headers, params={'name': 'Premier League', 'country': 'England'})
     if response_success(response) == True:
         content = response.json()
         data = content['data']
         for league in data:
             if league['name'] == 'Premier League':
-                season_id = league['id']
-                print(season_id)
-
-find_pl_id(base_url, headers)
+               season_id = league['id']
+    return season_id 
+season_id = find_pl_id(base_url, headers, season_id)
+print(season_id)
