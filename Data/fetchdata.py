@@ -17,8 +17,7 @@ def response_success(response):
     return False
 
 #Find Premier League ID
-league_id = ''
-def find_pl_id(base_url, headers, league_id):
+def find_pl_id(base_url, headers):
     response = requests.get(f"{base_url}/competitions", headers=headers, params={'name': 'Premier League', 'country': 'England'})
     if response_success(response) == True:
         content = response.json()
@@ -27,12 +26,11 @@ def find_pl_id(base_url, headers, league_id):
             if league['name'] == 'Premier League':
                league_id = league['id']
     return league_id 
-league_id = find_pl_id(base_url, headers, league_id)
+league_id = find_pl_id(base_url, headers)
 
 
 #Find 25/26 season ID
-season_id = ''
-def find_season_id(base_url, headers, season_id):
+def find_season_id(base_url, headers):
     response = requests.get(f"{base_url}/competitions/{league_id}/seasons", headers=headers)
     if response_success(response) == True:
         content = response.json()
@@ -41,5 +39,19 @@ def find_season_id(base_url, headers, season_id):
             if season['name'] == 'Premier League 25/26':
                 season_id = season['id']
     return season_id
-season_id = find_season_id(base_url, headers, season_id)
-print(season_id)
+season_id = find_season_id(base_url, headers)
+
+#Find 25/26 Premier League teams that survived relegation
+team_ids = []
+def find_teams(base_url, headers, teams):
+    response = requests.get(f"{base_url}/competitions/{league_id}/seasons/{season_id}/standings", headers=headers)
+    if response_success(response) == True:
+        content = response.json()
+        data = content['data']
+        for team in data:
+            if team['position'] < 18:
+                team_id = team['team']['id']
+                teams.append(team_id)
+    return team_ids
+team_ids = find_teams(base_url, headers, team_ids)
+print(team_ids)
