@@ -53,4 +53,7 @@ def find_teams(base_url, headers, teams):
             teams.append(team_id)
     return team_ids
 team_ids = find_teams(base_url, headers, team_ids)
-print(team_ids)
+
+def find_player_stats(base_url, headers):
+    for team in team_ids:
+        response = requests.get(f"{base_url}/teams/{team}/players", headers=headers)
