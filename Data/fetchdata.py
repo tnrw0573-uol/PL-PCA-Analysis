@@ -1,4 +1,5 @@
 import requests
+import time
 from pprint import pprint
 
 base_url = "https://api.thestatsapi.com/api/football"
@@ -10,10 +11,7 @@ headers = {
 #Check response and handle errors
 def response_success(response):
     if response.status_code == 200:
-        print("Successful response.")
         return True
-    else:
-        print(f"Response unsuccessful with status code {response.status_code}")
     return False
 
 #Find Premier League ID
@@ -55,7 +53,7 @@ def find_teams(base_url, headers, teams):
 team_ids = find_teams(base_url, headers, team_ids)
 
 #Find player ids
-players=[]
+player_ids=[]
 def find_player_stats(base_url, headers):
     for team in team_ids:
         response = requests.get(f"{base_url}/teams/{team}/players", headers=headers)
@@ -63,10 +61,46 @@ def find_player_stats(base_url, headers):
             content = response.json()
             data = content['data']
             for player in data:
-                players.append({
+                player_ids.append({
                     'name': player['name'],
                     'id': player['id']
                 })
-    return players
-players = find_player_stats(base_url, headers)
-pprint(players)
+    return player_ids
+player_ids = find_player_stats(base_url, headers)
+
+#Get player statistics
+player_stats = []
+def find_player_stats(base_url, headers):
+    for player in player_ids:
+        response = requests.get(f"{base_url}/players/{player['id']}/stats", headers=headers, params={'competition_id':league_id, 'season_id':season_id})
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+            if data['minutes_played'] >= 1000:
+                nineties_played = data['minutes_played'] / 90
+                player_stats.append({
+                    'player_id': data['player_id'],
+                    'position': data['position'],
+                    'goals': data['scoring']['goals'] / nineties_played,
+                    'assists': data['scoring']['assists'] / nineties_played,
+                    'goal_conversion_percentage': data['scoring']['goal_conversion_percentage'],
+                    'big_chances_created': data['scoring']['big_chances_created'] / nineties_played,
+                    'big_chances_missed': data['scoring']['big_chances_missed'] / nineties_played,
+                    'shots': data['shooting']['total_shots'] / nineties_played,
+                    'shots_on_target': data['shooting']['shots_on_target'] / nineties_played,
+                    'passes': data['passing']['total_passes'] / nineties_played,
+                    'pass_accuracy': data['passing']['pass_accuracy'],
+                    'key_passes': data['passing']['key_passes'] / nineties_played,
+                    'cross_accuracy': data['passing']['accurate_crosses_percentage'],
+                    'tackles': data['defending']['tackles'] / nineties_played,
+                    'interceptions': data['defending']['interceptions'] / nineties_played,
+                    'ground_duels_won_percentage': data['duels']['ground_duels_won_percentage'],
+                    'aerial_duels_won_percentage': data['duels']['aerial_duels_won_percentage'],
+                    'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played,
+                    'successful_dribbles_percentage': data['duels']['successful_dribbles_percentage']
+                })
+            #Time interval of 0.5s between requests to avoid exceeding rate limit
+            time.sleep(0.5)
+    return player_stats
+player_stats = find_player_stats(base_url, headers)
+pprint(player_stats)
