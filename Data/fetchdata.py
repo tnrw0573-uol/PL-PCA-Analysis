@@ -54,6 +54,19 @@ def find_teams(base_url, headers, teams):
     return team_ids
 team_ids = find_teams(base_url, headers, team_ids)
 
+#Find player ids
+players=[]
 def find_player_stats(base_url, headers):
     for team in team_ids:
         response = requests.get(f"{base_url}/teams/{team}/players", headers=headers)
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+            for player in data:
+                players.append({
+                    'name': player['name'],
+                    'id': player['id']
+                })
+    return players
+players = find_player_stats(base_url, headers)
+pprint(players)
