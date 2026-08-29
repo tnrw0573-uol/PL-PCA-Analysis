@@ -28,4 +28,18 @@ def find_pl_id(base_url, headers, league_id):
                league_id = league['id']
     return league_id 
 league_id = find_pl_id(base_url, headers, league_id)
-print(league_id)
+
+
+#Find 25/26 season ID
+season_id = ''
+def find_season_id(base_url, headers, season_id):
+    response = requests.get(f"{base_url}/competitions/{league_id}/seasons", headers=headers)
+    if response_success(response) == True:
+        content = response.json()
+        data = content['data']
+        for season in data:
+            if season['name'] == 'Premier League 25/26':
+                season_id = season['id']
+    return season_id
+season_id = find_season_id(base_url, headers, season_id)
+print(season_id)
