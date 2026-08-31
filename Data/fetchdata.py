@@ -104,4 +104,4 @@ def find_player_stats(base_url, headers):
 player_stats = find_player_stats(base_url, headers)
 pprint(player_stats)
 df = pd.DataFrame(player_stats)
-df.to_csv('player_stats.csv', index = False)
+df.to_csv('Data/player_stats.csv', index = False)
