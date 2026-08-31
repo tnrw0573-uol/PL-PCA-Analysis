@@ -5,7 +5,7 @@ import pandas as pd
 
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {
-    'Authorization': 'Bearer fapi_RiFdBS9odearwe8WgyoXfljk9mUo9G9I',
+    'Authorization': 'Bearer fapi_iHb8rAyu8VA6WOtqDGsp7tvxDXRZLCWo',
     'Content-Type': 'application/json'
 }
 
@@ -25,8 +25,6 @@ def find_pl_id(base_url, headers):
             if league['name'] == 'Premier League':
                league_id = league['id']
     return league_id 
-league_id = find_pl_id(base_url, headers)
-
 
 #Find 25/26 season ID
 def find_season_id(base_url, headers):
@@ -38,7 +36,6 @@ def find_season_id(base_url, headers):
             if season['name'] == 'Premier League 25/26':
                 season_id = season['id']
     return season_id
-season_id = find_season_id(base_url, headers)
 
 #Find 25/26 Premier League teams 
 team_ids = []
@@ -51,11 +48,10 @@ def find_teams(base_url, headers, teams):
             team_id = team['team']['id']
             teams.append(team_id)
     return team_ids
-team_ids = find_teams(base_url, headers, team_ids)
 
 #Find player ids
 player_ids=[]
-def find_player_stats(base_url, headers):
+def find_player_ids(base_url, headers):
     for team in team_ids:
         response = requests.get(f"{base_url}/teams/{team}/players", headers=headers)
         if response_success(response) == True:
@@ -67,7 +63,6 @@ def find_player_stats(base_url, headers):
                     'id': player['id']
                 })
     return player_ids
-player_ids = find_player_stats(base_url, headers)
 
 #Get player statistics
 player_stats = []
@@ -101,7 +96,13 @@ def find_player_stats(base_url, headers):
             #Time interval of 0.5s between requests to avoid exceeding rate limit
             time.sleep(0.5)
     return player_stats
-player_stats = find_player_stats(base_url, headers)
-pprint(player_stats)
-df = pd.DataFrame(player_stats)
-df.to_csv('Data/player_stats.csv', index = False)
+
+if __name__ == "__main__":
+    league_id = find_pl_id(base_url, headers)
+    season_id = find_season_id(base_url, headers)
+    team_ids = find_teams(base_url, headers, team_ids)
+    player_ids = find_player_ids(base_url, headers)
+    player_stats = find_player_stats(base_url, headers)
+    df = pd.DataFrame(player_stats)
+    df.to_csv('Data/player_stats.csv', index = False)
+
