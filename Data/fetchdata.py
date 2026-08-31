@@ -87,7 +87,6 @@ def find_player_stats(base_url, headers):
                     'assists': data['scoring']['assists'] / nineties_played,
                     'goal_conversion_percentage': data['scoring']['goal_conversion_percentage'],
                     'big_chances_created': data['scoring']['big_chances_created'] / nineties_played,
-                    'big_chances_missed': data['scoring']['big_chances_missed'] / nineties_played,
                     'shots': data['shooting']['total_shots'] / nineties_played,
                     'shots_on_target': data['shooting']['shots_on_target'] / nineties_played,
                     'passes': data['passing']['total_passes'] / nineties_played,
@@ -97,9 +96,7 @@ def find_player_stats(base_url, headers):
                     'tackles': data['defending']['tackles'] / nineties_played,
                     'interceptions': data['defending']['interceptions'] / nineties_played,
                     'ground_duels_won_percentage': data['duels']['ground_duels_won_percentage'],
-                    'aerial_duels_won_percentage': data['duels']['aerial_duels_won_percentage'],
-                    'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played,
-                    'successful_dribbles_percentage': data['duels']['successful_dribbles_percentage']
+                    'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played
                 })
             #Time interval of 0.5s between requests to avoid exceeding rate limit
             time.sleep(0.5)
