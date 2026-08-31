@@ -48,17 +48,22 @@ if option.lower() == "a":
     colors = ['red', 'green', 'blue', 'yellow']
     for position, color in zip(positions, colors):
         cond = new_df['position'] == position
-        plot_scatter(fig, cond)
         fig.add_trace(go.Scatter(
-            name = f"{position}",
-            marker=dict(color=color, size=8),
-        ))
+                        x=new_df.loc[cond, 'PC1'],
+                        y=new_df.loc[cond, 'PC2'],
+                        mode='markers',
+                        marker=dict(color=color, size=8),
+                        name = f'{position}',
+                        text=new_df.loc[cond, 'name'], 
+                        hovertemplate='<b>%{text}</b><extra></extra>'
+                    ))
     fig.update_layout(
         title='PCA Visualization on all Premier League Players',
         xaxis_title='Principal Component 1',
         yaxis_title='Principal Component 2'
     )
     fig.show()
+    fig.write_html('Plots/PCA_all.html')
 
 elif option == "g":
     #Plot for goalkeepers
@@ -71,6 +76,7 @@ elif option == "g":
             yaxis_title='Principal Component 2'
         )
     fig.show()
+    fig.write_html('Plots/PCA_gk.html')
 
 elif option == "d":
     #Plot for defenders
@@ -83,6 +89,7 @@ elif option == "d":
             yaxis_title='Principal Component 2'
         )
     fig.show()
+    fig.write_html('Plots/PCA_df.html')
 
 elif option == "m":
     #Plot for midfielders
@@ -95,6 +102,7 @@ elif option == "m":
             yaxis_title='Principal Component 2'
         )
     fig.show()
+    fig.write_html('Plots/PCA_mf.html')
 
 elif option == "f":
     #Plot for forwards
@@ -107,3 +115,4 @@ elif option == "f":
             yaxis_title='Principal Component 2'
         )
     fig.show()
+    fig.write_html('Plots/PCA_fw.html')
