@@ -1,5 +1,6 @@
 import requests
 import time
+from datetime import datetime
 from pprint import pprint
 import pandas as pd
 
@@ -8,6 +9,7 @@ headers = {
     'Authorization': 'Bearer REMOVED',
     'Content-Type': 'application/json'
 }
+current_year = datetime.now().year
 
 #Check response and handle errors
 def response_success(response):
@@ -33,7 +35,7 @@ def find_season_id(base_url, headers):
         content = response.json()
         data = content['data']
         for season in data:
-            if season['name'] == 'Premier League 25/26':
+            if season['end_year'] == current_year:
                 season_id = season['id']
     return season_id
 
