@@ -13,14 +13,18 @@ except FileNotFoundError:
 except Exception as e:
     print(f"Error: {e}")
 
-#Normalize data
-norm_df = StandardScaler().fit_transform(df.drop(['player_id', 'name', 'position'], axis = 1))
+def reduce_dataset(option, df):
+    #Filter dataset by position and normalize
+    if option != 'a':
+        df = df[df['position'] == option.upper()].reset_index(drop=True)
+    norm_df = StandardScaler().fit_transform(df.drop(['player_id', 'name', 'position'], axis = 1))
 
-#Reduce dataset
-pca = PCA(n_components=2)
-data = pca.fit_transform(norm_df)
-reduced_df = pd.DataFrame(data=data, columns=['PC1', 'PC2'])
-new_df = pd.concat([df[['player_id']], df[['name']], df[['position']], reduced_df], axis = 1)
+    #Reduce dataset
+    pca = PCA(n_components=2)
+    data = pca.fit_transform(norm_df)
+    reduced_df = pd.DataFrame(data=data, columns=['PC1', 'PC2'])
+    new_df = pd.concat([df[['player_id']], df[['name']], df[['position']], reduced_df], axis = 1)
+    return new_df
 
 def plot_scatter(figure, condition):
     figure.add_trace(go.Scatter(
@@ -35,13 +39,15 @@ def plot_scatter(figure, condition):
 #Get user input and validate
 valid_options = ['a', 'g', 'd', 'm', 'f']
 while True:
-    option = input("For what positions do you want PCA analysis? Enter 'a' for all, 'd' for defenders, 'm' for midfielders and 'f' for forwards: ")
+    option = input("For what positions do you want PCA analysis? Enter 'a' for all, 'g' for goalkeepers, 'd' for defenders, 'm' for midfielders and 'f' for forwards: ")
+    option = option.lower()
     if option in valid_options:
         break
     else:
         print(f"Only valid inputs are {valid_options}")
 
-if option.lower() == "a":
+if option == "a":
+    new_df = reduce_dataset(option, df)
     #Plot for all players
     fig = go.Figure()
     positions = list(set(new_df['position']))
@@ -66,6 +72,7 @@ if option.lower() == "a":
     fig.write_html('Plots/PCA_all.html')
 
 elif option == "g":
+    new_df = reduce_dataset(option, df)
     #Plot for goalkeepers
     fig = go.Figure()
     cond = new_df['position'] == "G"
@@ -79,6 +86,7 @@ elif option == "g":
     fig.write_html('Plots/PCA_gk.html')
 
 elif option == "d":
+    new_df = reduce_dataset(option, df)
     #Plot for defenders
     fig = go.Figure()
     cond = new_df['position'] == "D"
@@ -92,6 +100,7 @@ elif option == "d":
     fig.write_html('Plots/PCA_df.html')
 
 elif option == "m":
+    new_df = reduce_dataset(option, df)
     #Plot for midfielders
     fig = go.Figure()
     cond = new_df['position'] == "M"
@@ -105,6 +114,7 @@ elif option == "m":
     fig.write_html('Plots/PCA_mf.html')
 
 elif option == "f":
+    new_df = reduce_dataset(option, df)
     #Plot for forwards
     fig = go.Figure()
     cond = new_df['position'] == "F"
