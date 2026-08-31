@@ -16,12 +16,14 @@ except Exception as e:
 #Normalize data
 norm_df = StandardScaler().fit_transform(df.drop(['player_id', 'name', 'position'], axis = 1))
 
+#Reduce dataset
 pca = PCA(n_components=2)
 data = pca.fit_transform(norm_df)
 reduced_df = pd.DataFrame(data=data, columns=['PC1', 'PC2'])
 new_df = pd.concat([df[['player_id']], df[['name']], df[['position']], reduced_df], axis = 1)
 
-plt.clf()
+#Plot
+plt.clf() #Prevent new figure from being created
 positions = list(set(new_df['position']))
 colors = ['r', 'g', 'b', 'y']
 for position, color in zip(positions, colors):
