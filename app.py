@@ -63,6 +63,7 @@ def find_league_and_season(team_id, teams):
             season_id.append(team['season_id'])
     return league_id, season_id
  
+
 def find_player_stats(season_id, player_id, league_id, name):
     player_stats = []
     response = requests.get(f"{base_url}/players/{player_id}/stats", headers=headers, params={
@@ -112,14 +113,12 @@ def load_data():
     return pd.read_csv('Data/player_stats.csv')
  
  
-@st.cache_data
-def get_league_season_teams():
-    countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
-    leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
-    league_ids = find_league_ids(base_url, headers, countries, leagues)
-    season_ids = find_season(league_ids)
-    teams = find_teams(base_url, headers, league_ids, season_ids)
-    return teams
+countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
+leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
+league_ids = find_league_ids(base_url, headers, countries, leagues)
+season_ids = find_season(league_ids)
+teams = find_teams(base_url, headers, league_ids, season_ids)
+
  
  
 # ---------- App starts here ----------
@@ -128,7 +127,7 @@ st.title("Big 5 League Player Similarity Finder")
 st.warning("Note: players who have recently joined/left clubs in the Big 5 leagues are unavailable.")
  
 df = load_data()
-teams = get_league_season_teams()
+teams = find_teams(base_url, headers, league_ids, season_ids)
  
 player = st.text_input("Enter player's full name:")
  
