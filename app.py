@@ -190,7 +190,7 @@ if st.button("Find similar players") and player.strip():
             counter = 1
             for index, row in sorted_df.iterrows():
                 if row['name'] != name:
-                    st.write(f"{counter}. {row['name']}: {row['Distance']}")
+                    st.write(f"{counter}. {row['name']}")
                     counter += 1
                     if counter > 10:
                         break
