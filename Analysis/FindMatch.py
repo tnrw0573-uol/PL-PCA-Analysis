@@ -7,6 +7,7 @@ from Data.fetchdata import response_success
 from datetime import datetime
 from Analysis.PCA import reduce_dataset
 import pandas as pd
+from scipy.spatial.distance import cdist
 
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {
@@ -108,4 +109,17 @@ new_df, scaler, pca = reduce_dataset(option, df, 0.95)
 player_data = pd.DataFrame(player_stats)
 norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis = 1))
 new_player_data = pca.transform(norm_player_data)
-print(new_player_data)
+red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
+
+distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis = 1), 'euclidean')
+
+player_info = [{
+    'player_id': player_id,
+    'name': name,
+    'position': position
+}]
+player_info = pd.DataFrame(player_info)
+player_row = pd.concat([player_info, red_player_data], axis = 1)
+
+new_df = pd.concat([new_df, player_row]).reset_index(drop=True)
+print(new_df)
