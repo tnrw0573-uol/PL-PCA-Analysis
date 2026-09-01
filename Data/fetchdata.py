@@ -17,60 +17,70 @@ def response_success(response):
         return True
     return False
 
-#Find Premier League ID
-def find_pl_id(base_url, headers):
-    response = requests.get(f"{base_url}/competitions", headers=headers, params={'name': 'Premier League', 'country': 'England'})
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        for league in data:
-            if league['name'] == 'Premier League':
-               league_id = league['id']
-    return league_id 
+#Find ID for each league
+def find_league_ids(base_url, headers, countries, leagues):
+    league_ids = []
+    for country, league in zip(countries, leagues):
+        response = requests.get(f"{base_url}/competitions", headers=headers, params={'name': f'{league}', 'country': f'{country}'})
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+        for result in data:
+            if result['name'] == f'{league}':
+               league_ids.append(result['id'])
+    return league_ids
 
-#Find 25/26 season ID
-def find_season_id(base_url, headers):
-    response = requests.get(f"{base_url}/competitions/{league_id}/seasons", headers=headers)
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        for season in data:
-            if season['end_year'] == current_year:
-                season_id = season['id']
-    return season_id
+#Find 25/26 season IDs
+def find_seasons_id(base_url, headers):
+    season_ids = []
+    for id in league_ids:
+        response = requests.get(f"{base_url}/competitions/{id}/seasons", headers=headers)
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+            for season in data:
+                if season['end_year'] == current_year:
+                    season_ids.append(season['id'])
+    return season_ids
 
-#Find 25/26 Premier League teams 
-team_ids = []
-def find_teams(base_url, headers, teams, league_id, season_id):
-    response = requests.get(f"{base_url}/competitions/{league_id}/seasons/{season_id}/standings", headers=headers)
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        for team in data:
-            team_id = team['team']['id']
-            teams.append(team_id)
-    return teams
+#Find 25/26 Big 5 league teams 
+def find_teams(base_url, headers, league_ids, season_ids):
+    team_ids = []
+    for league, season in zip(league_ids, season_ids):
+        response = requests.get(f"{base_url}/competitions/{league}/seasons/{season}/standings", headers=headers)
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+            for team in data:
+                team_ids.append({
+                    'id': team['team']['id'],
+                    'league_id': league,
+                    'season_id': season
+                })
+    return team_ids
 
 #Find player ids
-player_ids=[]
-def find_player_ids(base_url, headers):
+def find_player_ids(base_url, headers, team_ids):
+    player_ids = []
     for team in team_ids:
-        response = requests.get(f"{base_url}/teams/{team}/players", headers=headers)
+        response = requests.get(f"{base_url}/teams/{team['id']}/players", headers=headers)
         if response_success(response) == True:
             content = response.json()
             data = content['data']
             for player in data:
                 player_ids.append({
                     'name': player['name'],
-                    'id': player['id']
+                    'id': player['id'],
+                    'league_id': team['league_id'],
+                    'season_id': team['season_id']
                 })
     return player_ids
 
 #Get player statistics
-player_stats = []
 def find_player_stats(base_url, headers):
+    player_stats = []
     for player in player_ids:
-        response = requests.get(f"{base_url}/players/{player['id']}/stats", headers=headers, params={'competition_id':league_id, 'season_id':season_id})
+        response = requests.get(f"{base_url}/players/{player['id']}/stats", headers=headers, params={'competition_id':player['league_id'], 'season_id':player['season_id']})
         if response_success(response) == True:
             content = response.json()
             data = content['data']
@@ -100,11 +110,14 @@ def find_player_stats(base_url, headers):
     return player_stats
 
 if __name__ == "__main__":
-    league_id = find_pl_id(base_url, headers)
-    season_id = find_season_id(base_url, headers)
-    team_ids = find_teams(base_url, headers, team_ids, league_id, season_id)
-    player_ids = find_player_ids(base_url, headers)
+    countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
+    leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
+    league_ids = find_league_ids(base_url, headers, countries, leagues)
+    season_ids = find_seasons_id(base_url, headers)
+    team_ids = find_teams(base_url, headers, league_ids, season_ids)
+    player_ids = find_player_ids(base_url, headers, team_ids)
     player_stats = find_player_stats(base_url, headers)
+    pprint(player_stats)
     df = pd.DataFrame(player_stats)
     df.to_csv('Data/player_stats.csv', index = False)
 

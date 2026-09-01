@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pprint import pprint 
-from Data.fetchdata import response_success, find_teams
+from Data.fetchdata import response_success, find_teams, find_league_ids
 from datetime import datetime
 from Analysis.PCA import reduce_dataset
 import pandas as pd
@@ -25,8 +25,9 @@ def find_player(player, teams):
     content = response.json()
     data = content['data']
 
-    # Filter to only players currently at a Premier League club
-    data = [p for p in data if p.get('current_team') and p['current_team']['id'] in teams]
+    # Filter to only players currently at a Big 5 league club
+    team_ids = [t['id'] for t in teams]
+    data = [p for p in data if p.get('current_team') and p['current_team']['id'] in team_ids]
 
     if len(data) == 0:
         return None, None, None, None
@@ -52,28 +53,31 @@ def find_player(player, teams):
     position = chosen['position']
     return player_id, team_id, name, position
 
-def find_league():
-    response = requests.get(f"{base_url}/competitions", headers=headers, params={'search': 'Premier League', 'country': 'England'})
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        league_id = data[0]['id']
-    return league_id
+def find_league_and_season(team_id, teams):
+    league_id = []
+    season_id = []
+    for team in teams:
+        if team['id'] == team_id:
+            league_id.append(team['league_id'])
+            season_id.append(team['season_id'])
+    return league_id, season_id
 
-def find_season(league_id):
-    response = requests.get(f"{base_url}/competitions/{league_id}/seasons", headers=headers)
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        for season in data:
-            if season['end_year'] == current_year:
-                season_id = season['id']
-    return season_id 
+def find_season(league_ids):
+    season_ids = []
+    for league in league_ids:
+        response = requests.get(f"{base_url}/competitions/{league}/seasons", headers=headers)
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+            for season in data:
+                if season['end_year'] == current_year:
+                    season_ids.append(season['id'])
+    return season_ids
 
 def find_player_stats(season_id, player_id, league_id, name):
     response = requests.get(f"{base_url}/players/{player_id}/stats", headers=headers, params={
-        'season_id': f'{season_id}',
-        'competition_id': f'{league_id}'})
+        'season_id': f'{season_id[0]}',
+        'competition_id': f'{league_id[0]}'})
     if response_success(response) == True:
         content = response.json()
         data = content['data']
@@ -99,16 +103,17 @@ def find_player_stats(season_id, player_id, league_id, name):
         })
     return player_stats
 
-league_id = find_league()
-season_id = find_season(league_id)
-teams = []
-teams = find_teams(base_url, headers, teams, league_id, season_id)
+countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
+leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
+league_ids = find_league_ids(base_url, headers, countries, leagues)
+season_ids = find_season(league_ids)
+teams = find_teams(base_url, headers, league_ids, season_ids)
 
 continuing = True
 while continuing:
     #Get player name and validate
     while True:
-        print("IMPORTANT: Player must be from the 25/26 Premier League season")
+        print("IMPORTANT: Player that have recently joined/left for clubs in the Big 5 leagues are unavailable")
         player = input("Enter player's full name: ").strip()
         if not player:
             print("Name cannot be empty.")
@@ -119,7 +124,6 @@ while continuing:
             print("Player not found. Try again.")
             continue  
         break
-
     #Get option and validate
     while True:
         options = ['a', 's']
@@ -128,9 +132,8 @@ while continuing:
             break
         print(f'Invalid Input. Choose from {options}')
 
-    #Get Premier League id
-    league_id = find_league()
-    season_id = find_season(league_id)
+    #Find player's league
+    league_id, season_id = find_league_and_season(team_id, teams)
     #Get player stats for last season
     player_stats = []
     player_stats = find_player_stats(season_id, player_id, league_id, name)
@@ -173,7 +176,7 @@ while continuing:
     counter = 1
     for index, row in sorted_df.iterrows():
         if row['name'] != name:
-            print(f"{counter}. {row['name']}: {row['Distance']}")
+            print(f"{counter}. {row['name']}")
             counter += 1
             if counter > 10:
                 break
