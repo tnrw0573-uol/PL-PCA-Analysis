@@ -108,6 +108,7 @@ continuing = True
 while continuing:
     #Get player name and validate
     while True:
+        print("IMPORTANT: Player must be from the 25/26 Premier League season")
         player = input("Enter player's full name: ").strip()
         if not player:
             print("Name cannot be empty.")
