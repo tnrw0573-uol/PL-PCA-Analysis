@@ -136,6 +136,7 @@ def get_league_season_teams():
 
 # ---------- App starts here ----------
 st.title("Premier League Player Similarity Finder")
+st.warning("Important: You can only enter current Premier League players who have also played in 25/26.")
 
 df = load_data()
 league_id, season_id, teams_id = get_league_season_teams()
