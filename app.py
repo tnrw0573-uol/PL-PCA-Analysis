@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import requests
+from Data.fetchdata import response_success, find_teams, find_league_ids
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.spatial.distance import cdist
@@ -14,17 +15,6 @@ current_year = datetime.now().year
  
 def response_success(response):
     return response.status_code == 200
- 
- 
-def find_league_ids(base_url, headers, countries, leagues):
-    league_ids = []
-    for country, league in zip(countries, leagues):
-        response = requests.get(f"{base_url}/competitions", headers=headers, params={'search': league, 'country': country})
-        if response_success(response) == True:
-            content = response.json()
-            data = content['data']
-            league_ids.append(data[0]['id'])
-    return league_ids
  
  
 def find_season(league_ids):
