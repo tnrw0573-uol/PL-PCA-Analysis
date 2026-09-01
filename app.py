@@ -176,7 +176,7 @@ if chosen is not None:
     player_stats = find_player_stats(season_id, player_id, league_id, name)
 
     if not player_stats:
-        st.error("Could not fetch stats for this player.")
+        st.error("Player recently left a club.")
     else:
         if option == 's':
             new_df, scaler, pca = reduce_dataset(position, df, 0.95)
