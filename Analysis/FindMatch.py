@@ -26,7 +26,7 @@ def find_player(player, teams):
     data = content['data']
 
     # Filter to only players currently at a Premier League club
-    data = [p for p in data if p.get('current_team') and p['current_team']['id'] in teams]
+    #data = [p for p in data if p.get('current_team') and p['current_team']['id'] in teams]
 
     if len(data) == 0:
         return None, None, None, None
@@ -53,27 +53,29 @@ def find_player(player, teams):
     return player_id, team_id, name, position
 
 def find_league():
+    league_id = []
     response = requests.get(f"{base_url}/competitions", headers=headers, params={'search': 'Premier League', 'country': 'England'})
     if response_success(response) == True:
         content = response.json()
         data = content['data']
-        league_id = data[0]['id']
+        league_id.append(data[0]['id'])
     return league_id
 
 def find_season(league_id):
-    response = requests.get(f"{base_url}/competitions/{league_id}/seasons", headers=headers)
+    season_id = []
+    response = requests.get(f"{base_url}/competitions/{league_id[0]}/seasons", headers=headers)
     if response_success(response) == True:
         content = response.json()
         data = content['data']
         for season in data:
             if season['end_year'] == current_year:
-                season_id = season['id']
+                season_id.append(season['id'])
     return season_id 
 
 def find_player_stats(season_id, player_id, league_id, name):
     response = requests.get(f"{base_url}/players/{player_id}/stats", headers=headers, params={
-        'season_id': f'{season_id}',
-        'competition_id': f'{league_id}'})
+        'season_id': f'{season_id[0]}',
+        'competition_id': f'{league_id[0]}'})
     if response_success(response) == True:
         content = response.json()
         data = content['data']
@@ -101,8 +103,7 @@ def find_player_stats(season_id, player_id, league_id, name):
 
 league_id = find_league()
 season_id = find_season(league_id)
-teams = []
-teams = find_teams(base_url, headers, teams, league_id, season_id)
+teams = find_teams(base_url, headers, league_id, season_id)
 
 continuing = True
 while continuing:
