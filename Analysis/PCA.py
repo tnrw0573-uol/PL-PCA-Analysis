@@ -40,7 +40,7 @@ def plot_scatter(figure, condition):
                 hovertemplate='<b>%{text}</b><extra></extra>'
             ))
 
-if __name__ == "__main":
+if __name__ == "__main__":
     #Get user input and validate
     valid_options = ['a', 'g', 'd', 'm', 'f']
     while True:
