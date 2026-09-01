@@ -6,6 +6,7 @@ from Analysis.PCA import reduce_dataset
 import pandas as pd
 from scipy.spatial.distance import cdist
 import numpy as np
+from pprint import pprint
 
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {
@@ -18,7 +19,7 @@ current_year = datetime.now().year
 def find_player(player, teams):
     response = requests.get(f"{base_url}/players", headers=headers, params={'search': f'{player}'})
     if response_success(response) != True:
-        return None, None, None, None
+        return None
 
     content = response.json()
     data = content['data']
@@ -28,7 +29,7 @@ def find_player(player, teams):
     data = [p for p in data if p.get('current_team') and p['current_team']['id'] in team_ids]
 
     if len(data) == 0:
-        return None, None, None, None
+        return None
 
     return data
 
@@ -161,6 +162,7 @@ if st.session_state.candidates is not None:
         chosen = data[0]
     else:
         st.write("Multiple players found:")
+        pprint(data)
         labels = [f"{p['name']} - {p['current_team']['name']} - {p['position']}" for p in data]
         selected_label = st.selectbox("Choose the correct player:", labels)
         if st.button("Confirm player"):
