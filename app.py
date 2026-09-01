@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import requests
+from Data.fetchdata import response_success, find_teams, find_league_ids
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.spatial.distance import cdist
@@ -10,22 +11,6 @@ from datetime import datetime
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {"Authorization": f"Bearer {st.secrets['API_KEY']}"}
 current_year = datetime.now().year
- 
- 
-def response_success(response):
-    return response.status_code == 200
- 
- 
-def find_league_ids(base_url, headers, countries, leagues):
-    league_ids = []
-    for country, league in zip(countries, leagues):
-        response = requests.get(f"{base_url}/competitions", headers=headers, params={'search': league, 'country': country})
-        if response_success(response) == True:
-            content = response.json()
-            data = content['data']
-            league_ids.append(data[0]['id'])
-    return league_ids
- 
  
 def find_season(league_ids):
     season_ids = []
@@ -38,23 +23,6 @@ def find_season(league_ids):
                 if season['end_year'] == current_year:
                     season_ids.append(season['id'])
     return season_ids
- 
- 
-def find_teams(base_url, headers, league_ids, season_ids):
-    teams = []
-    for league_id, season_id in zip(league_ids, season_ids):
-        response = requests.get(f"{base_url}/competitions/{league_id}/seasons/{season_id}/standings", headers=headers)
-        if response_success(response) == True:
-            content = response.json()
-            data = content['data']
-            for team in data:
-                teams.append({
-                    'id': team['team']['id'],
-                    'league_id': league_id,
-                    'season_id': season_id
-                })
-    return teams
- 
  
 def find_player(player, teams):
     response = requests.get(f"{base_url}/players", headers=headers, params={'search': f'{player}'})
@@ -94,7 +62,6 @@ def find_league_and_season(team_id, teams):
             league_id.append(team['league_id'])
             season_id.append(team['season_id'])
     return league_id, season_id
- 
  
 def find_player_stats(season_id, player_id, league_id, name):
     player_stats = []
