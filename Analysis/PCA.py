@@ -69,7 +69,7 @@ if __name__ == "__main__":
                             hovertemplate='<b>%{text}</b><extra></extra>'
                         ))
         fig.update_layout(
-            title='PCA Visualization on all Premier League Players',
+            title='PCA Visualization on all Big 5 League Players',
             xaxis_title='Principal Component 1',
             yaxis_title='Principal Component 2'
         )
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         cond = new_df['position'] == "G"
         plot_scatter(fig, cond)
         fig.update_layout(
-                title='PCA Visualization on all Premier League Goalkeepers',
+                title='PCA Visualization on all Big 5 Goalkeepers',
                 xaxis_title='Principal Component 1',
                 yaxis_title='Principal Component 2'
             )
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         cond = new_df['position'] == "D"
         plot_scatter(fig, cond)
         fig.update_layout(
-                title='PCA Visualization on all Premier League Defenders',
+                title='PCA Visualization on all Big 5 Defenders',
                 xaxis_title='Principal Component 1',
                 yaxis_title='Principal Component 2'
             )
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         cond = new_df['position'] == "M"
         plot_scatter(fig, cond)
         fig.update_layout(
-                title='PCA Visualization on all Premier League Midfielders',
+                title='PCA Visualization on all Big 5 Midfielders',
                 xaxis_title='Principal Component 1',
                 yaxis_title='Principal Component 2'
             )
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         cond = new_df['position'] == "F"
         plot_scatter(fig, cond)
         fig.update_layout(
-                title='PCA Visualization on all Premier League Forwards',
+                title='PCA Visualization on all Big 5 Forwards',
                 xaxis_title='Principal Component 1',
                 yaxis_title='Principal Component 2'
             )
