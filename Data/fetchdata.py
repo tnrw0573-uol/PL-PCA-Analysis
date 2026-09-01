@@ -102,7 +102,7 @@ def find_player_stats(base_url, headers):
 if __name__ == "__main__":
     league_id = find_pl_id(base_url, headers)
     season_id = find_season_id(base_url, headers)
-    team_ids = find_teams(base_url, headers, team_ids)
+    team_ids = find_teams(base_url, headers, team_ids, league_id, season_id)
     player_ids = find_player_ids(base_url, headers)
     player_stats = find_player_stats(base_url, headers)
     df = pd.DataFrame(player_stats)
