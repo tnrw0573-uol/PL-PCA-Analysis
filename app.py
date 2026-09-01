@@ -158,7 +158,7 @@ def get_league_season_teams():
 # ---------- App starts here ----------
 st.title("Big 5 League Player Similarity Finder")
  
-st.info("Note: players who have recently joined/left clubs in the Big 5 leagues are unavailable.")
+st.warning("Note: players who have recently joined/left clubs in the Big 5 leagues are unavailable.")
  
 df = load_data()
 teams = get_league_season_teams()
