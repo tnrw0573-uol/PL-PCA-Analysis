@@ -41,7 +41,7 @@ def find_season_id(base_url, headers):
 
 #Find 25/26 Premier League teams 
 team_ids = []
-def find_teams(base_url, headers, teams):
+def find_teams(base_url, headers, teams, league_id, season_id):
     response = requests.get(f"{base_url}/competitions/{league_id}/seasons/{season_id}/standings", headers=headers)
     if response_success(response) == True:
         content = response.json()
@@ -49,7 +49,7 @@ def find_teams(base_url, headers, teams):
         for team in data:
             team_id = team['team']['id']
             teams.append(team_id)
-    return team_ids
+    return teams
 
 #Find player ids
 player_ids=[]

@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pprint import pprint 
-from Data.fetchdata import response_success
+from Data.fetchdata import response_success, find_teams
 from datetime import datetime
 from Analysis.PCA import reduce_dataset
 import pandas as pd
@@ -17,28 +17,47 @@ headers = {
 }
 current_year = datetime.now().year
 
-def find_player(player):
-    player_id = None
-    team_id = None
-    name = None
-    position = None
+def find_player(player, teams):
     response = requests.get(f"{base_url}/players", headers=headers, params={'search': f'{player}'})
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        if len(data) != 0:
-            player_id = data[0]['id']
-            team_id = data[0]['current_team']['id']
-            name = data[0]['name']
-            position = data[0]['position']
+    if response_success(response) != True:
+        return None, None, None, None
+
+    content = response.json()
+    data = content['data']
+
+    # Filter to only players currently at a Premier League club
+    data = [p for p in data if p.get('current_team') and p['current_team']['id'] in teams]
+
+    if len(data) == 0:
+        return None, None, None, None
+
+    if len(data) == 1:
+        chosen = data[0]
+    else:
+        print("\nMultiple players found:")
+        for i, p in enumerate(data):
+            team_name = p['current_team']['name'] if p.get('current_team') else 'Unknown'
+            print(f"{i+1}. {p['name']} - {team_name} - {p['position']}")
+
+        while True:
+            choice = input(f"Enter the number of the correct player (1-{len(data)}): ").strip()
+            if choice.isdigit() and 1 <= int(choice) <= len(data):
+                chosen = data[int(choice) - 1]
+                break
+            print("Invalid choice. Try again.")
+
+    player_id = chosen['id']
+    team_id = chosen['current_team']['id']
+    name = chosen['name']
+    position = chosen['position']
     return player_id, team_id, name, position
 
-def find_league(team_id):
-    response = requests.get(f"{base_url}/teams/{team_id}", headers=headers)
+def find_league():
+    response = requests.get(f"{base_url}/competitions", headers=headers, params={'search': 'Premier League', 'country': 'England'})
     if response_success(response) == True:
         content = response.json()
         data = content['data']
-        league_id = data['primary_competition']['id']
+        league_id = data[0]['id']
     return league_id
 
 def find_season(league_id):
@@ -80,6 +99,11 @@ def find_player_stats(season_id, player_id, league_id, name):
         })
     return player_stats
 
+league_id = find_league()
+season_id = find_season(league_id)
+teams = []
+teams = find_teams(base_url, headers, teams, league_id, season_id)
+
 continuing = True
 while continuing:
     #Get player name and validate
@@ -88,8 +112,8 @@ while continuing:
         if not player:
             print("Name cannot be empty.")
             continue
-        
-        player_id, team_id, name, position = find_player(player)
+
+        player_id, team_id, name, position = find_player(player, teams)
         if player_id is None:
             print("Player not found. Try again.")
             continue  
@@ -103,9 +127,10 @@ while continuing:
             break
         print(f'Invalid Input. Choose from {options}')
 
-    #Get player's league, last season and stats for last season
-    league_id = find_league(team_id)
+    #Get Premier League id
+    league_id = find_league()
     season_id = find_season(league_id)
+    #Get player stats for last season
     player_stats = []
     player_stats = find_player_stats(season_id, player_id, league_id, name)
 
