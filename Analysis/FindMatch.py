@@ -80,51 +80,79 @@ def find_player_stats(season_id, player_id, league_id, name):
         })
     return player_stats
 
-while True:
-    player = input("Enter player's full name: ").strip()
-    if not player:
-        print("Name cannot be empty.")
-        continue
-    
-    player_id, team_id, name, position = find_player(player)
-    if player_id is None:
-        print("Player not found. Try again.")
-        continue  
-    break
-
-while True:
-    options = ['a', 's']
-    option = input("Compare player to all players (enter 'a') or players with same position? (enter 's'): ")
-    if option.lower() in options:
+continuing = True
+while continuing:
+    #Get player name and validate
+    while True:
+        player = input("Enter player's full name: ").strip()
+        if not player:
+            print("Name cannot be empty.")
+            continue
+        
+        player_id, team_id, name, position = find_player(player)
+        if player_id is None:
+            print("Player not found. Try again.")
+            continue  
         break
-    print(f'Invalid Input. Choose from {options}')
 
-league_id = find_league(team_id)
-season_id = find_season(league_id)
-player_stats = []
-player_stats = find_player_stats(season_id, player_id, league_id, name)
+    #Get option and validate
+    while True:
+        options = ['a', 's']
+        option = input("Compare player to all players (enter 'a') or players with same position? (enter 's'): ")
+        if option.lower() in options:
+            break
+        print(f'Invalid Input. Choose from {options}')
 
-df = pd.read_csv('Data/player_stats.csv')
-new_df, scaler, pca = reduce_dataset(option, df, 0.95)
+    #Get player's league, last season and stats for last season
+    league_id = find_league(team_id)
+    season_id = find_season(league_id)
+    player_stats = []
+    player_stats = find_player_stats(season_id, player_id, league_id, name)
 
-player_data = pd.DataFrame(player_stats)
-norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis = 1))
-new_player_data = pca.transform(norm_player_data)
-red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
+    #Load dataset
+    df = pd.read_csv('Data/player_stats.csv')
+    #Reduce dataset
+    if option == 's':
+        new_df, scaler, pca = reduce_dataset(position, df, 0.95)
+    else:
+        new_df, scaler, pca = reduce_dataset(option, df, 0.95)
 
-distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis = 1), 'euclidean')
-distances = np.transpose(distances)
-distances = pd.DataFrame(data=distances, columns=['Distance'])
+    #Normalize and transform player's data using the same scaler and pca as the dataset
+    player_data = pd.DataFrame(player_stats)
+    norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis = 1))
+    new_player_data = pca.transform(norm_player_data)
+    red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
 
-player_info = [{
-    'player_id': player_id,
-    'name': name,
-    'position': position
-}]
-player_info = pd.DataFrame(player_info)
-player_row = pd.concat([player_info, red_player_data], axis = 1)
+    #Calculate euclidean distance between player and the others
+    distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis = 1), 'euclidean')
+    #Transpose to make a column
+    distances = np.transpose(distances)
+    distances = pd.DataFrame(data=distances, columns=['Distance'])
 
-new_df = pd.concat([new_df, player_row]).reset_index(drop=True)
+    #Add player to the dataset
+    player_info = [{
+        'player_id': player_id,
+        'name': name,
+        'position': position
+    }]
+    player_info = pd.DataFrame(player_info)
+    player_row = pd.concat([player_info, red_player_data], axis = 1)
+    new_df = pd.concat([new_df, player_row]).reset_index(drop=True)
 
-new_df = pd.concat([new_df, distances], axis = 1)
-print(new_df)
+    #Add distance column to dataset
+    new_df = pd.concat([new_df, distances], axis = 1)
+    #Sort by distance (ascending)
+    sorted_df = new_df.sort_values(by='Distance')
+
+    counter = 1
+    for index, row in sorted_df.iterrows():
+        if row['name'] != name:
+            print(f"{counter}. {row['name']}: {row['Distance']}")
+            counter += 1
+            if counter > 10:
+                break
+
+    #Give user option to enter new player
+    cont_option = input("Enter another player? (y/n): ")
+    if cont_option.lower() == "n":
+        break
