@@ -5,6 +5,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pprint import pprint 
 from Data.fetchdata import response_success
 from datetime import datetime
+from Analysis.PCA import reduce_dataset
+import pandas as pd
 
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {
@@ -14,14 +16,20 @@ headers = {
 current_year = datetime.now().year
 
 def find_player(player):
+    player_id = None
+    team_id = None
+    name = None
+    position = None
     response = requests.get(f"{base_url}/players", headers=headers, params={'search': f'{player}'})
     if response_success(response) == True:
         content = response.json()
         data = content['data']
-        player_id = data[0]['id']
-        team_id = data[0]['current_team']['id']
-        name = data[0]['name']
-    return player_id, team_id, name
+        if len(data) != 0:
+            player_id = data[0]['id']
+            team_id = data[0]['current_team']['id']
+            name = data[0]['name']
+            position = data[0]['position']
+    return player_id, team_id, name, position
 
 def find_league(team_id):
     response = requests.get(f"{base_url}/teams/{team_id}", headers=headers)
@@ -70,9 +78,34 @@ def find_player_stats(season_id, player_id, league_id, name):
         })
     return player_stats
 
-player = input("Enter player's full name: ")
-player_id, team_id, name = find_player(player)
+while True:
+    player = input("Enter player's full name: ").strip()
+    if not player:
+        print("Name cannot be empty.")
+        continue
+    
+    player_id, team_id, name, position = find_player(player)
+    if player_id is None:
+        print("Player not found. Try again.")
+        continue  
+    break
+
+while True:
+    options = ['a', 's']
+    option = input("Compare player to all players (enter 'a') or players with same position? (enter 's'): ")
+    if option.lower() in options:
+        break
+    print(f'Invalid Input. Choose from {options}')
+
 league_id = find_league(team_id)
 season_id = find_season(league_id)
 player_stats = []
 player_stats = find_player_stats(season_id, player_id, league_id, name)
+
+df = pd.read_csv('Data/player_stats.csv')
+new_df, scaler, pca = reduce_dataset(option, df, 0.95)
+
+player_data = pd.DataFrame(player_stats)
+norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis = 1))
+new_player_data = pca.transform(norm_player_data)
+print(new_player_data)
