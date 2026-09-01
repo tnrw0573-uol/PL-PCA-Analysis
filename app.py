@@ -6,30 +6,71 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.spatial.distance import cdist
 from datetime import datetime
-
+ 
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {"Authorization": f"Bearer {st.secrets['API_KEY']}"}
 current_year = datetime.now().year
-
-
+ 
+ 
 def response_success(response):
     return response.status_code == 200
-
-
+ 
+ 
+def find_league_ids(base_url, headers, countries, leagues):
+    league_ids = []
+    for country, league in zip(countries, leagues):
+        response = requests.get(f"{base_url}/competitions", headers=headers, params={'search': league, 'country': country})
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+            league_ids.append(data[0]['id'])
+    return league_ids
+ 
+ 
+def find_season(league_ids):
+    season_ids = []
+    for league in league_ids:
+        response = requests.get(f"{base_url}/competitions/{league}/seasons", headers=headers)
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+            for season in data:
+                if season['end_year'] == current_year:
+                    season_ids.append(season['id'])
+    return season_ids
+ 
+ 
+def find_teams(base_url, headers, league_ids, season_ids):
+    teams = []
+    for league_id, season_id in zip(league_ids, season_ids):
+        response = requests.get(f"{base_url}/competitions/{league_id}/seasons/{season_id}/standings", headers=headers)
+        if response_success(response) == True:
+            content = response.json()
+            data = content['data']
+            for team in data:
+                teams.append({
+                    'id': team['team']['id'],
+                    'league_id': league_id,
+                    'season_id': season_id
+                })
+    return teams
+ 
+ 
 def find_player(player, teams):
     response = requests.get(f"{base_url}/players", headers=headers, params={'search': f'{player}'})
     if response_success(response) != True:
         return None, None, None, None
-
+ 
     content = response.json()
     data = content['data']
-
-    # Filter to only players currently at a Premier League club
-    data = [p for p in data if p.get('current_team') and p['current_team']['id'] in teams]
-
+ 
+    # Filter to only players currently at a Big 5 league club
+    team_ids = [t['id'] for t in teams]
+    data = [p for p in data if p.get('current_team') and p['current_team']['id'] in team_ids]
+ 
     if len(data) == 0:
         return None, None, None, None
-
+ 
     if len(data) == 1:
         chosen = data[0]
     else:
@@ -37,50 +78,29 @@ def find_player(player, teams):
         labels = [f"{p['name']} - {p['current_team']['name']} - {p['position']}" for p in data]
         selected_label = st.selectbox("Choose the correct player:", labels)
         chosen = data[labels.index(selected_label)]
-
+ 
     player_id = chosen['id']
     team_id = chosen['current_team']['id']
     name = chosen['name']
     position = chosen['position']
     return player_id, team_id, name, position
-
-
-def find_league():
-    response = requests.get(f"{base_url}/competitions", headers=headers, params={'search': 'Premier League', 'country': 'England'})
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        league_id = data[0]['id']
-    return league_id
-
-
-def find_season(league_id):
-    response = requests.get(f"{base_url}/competitions/{league_id}/seasons", headers=headers)
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        for season in data:
-            if season['end_year'] == current_year:
-                season_id = season['id']
-    return season_id
-
-
-def find_teams(base_url, headers, teams, league_id, season_id):
-    response = requests.get(f"{base_url}/competitions/{league_id}/seasons/{season_id}/standings", headers=headers)
-    if response_success(response) == True:
-        content = response.json()
-        data = content['data']
-        for team in data:
-            team_id = team['team']['id']
-            teams.append(team_id)
-    return teams
-
-
+ 
+ 
+def find_league_and_season(team_id, teams):
+    league_id = []
+    season_id = []
+    for team in teams:
+        if team['id'] == team_id:
+            league_id.append(team['league_id'])
+            season_id.append(team['season_id'])
+    return league_id, season_id
+ 
+ 
 def find_player_stats(season_id, player_id, league_id, name):
     player_stats = []
     response = requests.get(f"{base_url}/players/{player_id}/stats", headers=headers, params={
-        'season_id': f'{season_id}',
-        'competition_id': f'{league_id}'})
+        'season_id': f'{season_id[0]}',
+        'competition_id': f'{league_id[0]}'})
     if response_success(response) == True:
         content = response.json()
         data = content['data']
@@ -105,58 +125,61 @@ def find_player_stats(season_id, player_id, league_id, name):
             'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played
         })
     return player_stats
-
-
+ 
+ 
 def reduce_dataset(option, df, n_components=0.95):
     if option != 'a':
         df = df[df['position'] == option.upper()].reset_index(drop=True)
     scaler = StandardScaler()
     norm_df = scaler.fit_transform(df.drop(['player_id', 'name', 'position'], axis=1))
-
+ 
     pca = PCA(n_components)
     data = pca.fit_transform(norm_df)
     reduced_df = pd.DataFrame(data=data, columns=[f'PC{i+1}' for i in range(data.shape[1])])
     new_df = pd.concat([df[['player_id']], df[['name']], df[['position']], reduced_df], axis=1)
     return new_df, scaler, pca
-
-
+ 
+ 
 @st.cache_data
 def load_data():
     return pd.read_csv('Data/player_stats.csv')
-
-
+ 
+ 
 @st.cache_data
 def get_league_season_teams():
-    league_id = find_league()
-    season_id = find_season(league_id)
-    teams = []
-    teams_id = find_teams(base_url, headers, teams, league_id, season_id)
-    return league_id, season_id, teams_id
-
-
+    countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
+    leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
+    league_ids = find_league_ids(base_url, headers, countries, leagues)
+    season_ids = find_season(league_ids)
+    teams = find_teams(base_url, headers, league_ids, season_ids)
+    return teams
+ 
+ 
 # ---------- App starts here ----------
-st.title("Premier League Player Similarity Finder")
-st.warning("Important: You can only enter current Premier League players who have also played in 25/26.")
-
+st.title("Big 5 League Player Similarity Finder")
+ 
+st.info("Note: players who have recently joined/left clubs in the Big 5 leagues are unavailable.")
+ 
 df = load_data()
-league_id, season_id, teams_id = get_league_season_teams()
-
+teams = get_league_season_teams()
+ 
 player = st.text_input("Enter player's full name:")
-
+ 
 options = ['a', 's']
 option = st.radio(
     "Compare player to all players (enter 'a') or players with same position? (enter 's'):",
     options
 )
-
+ 
 if st.button("Find similar players") and player.strip():
-    player_id, team_id, name, position = find_player(player.strip(), teams_id)
-
+    player_id, team_id, name, position = find_player(player.strip(), teams)
+ 
     if player_id is None:
         st.error("Player not found.")
     else:
+        league_id, season_id = find_league_and_season(team_id, teams)
         player_stats = find_player_stats(season_id, player_id, league_id, name)
-
+ 
         if not player_stats:
             st.error("Could not fetch stats for this player.")
         else:
@@ -164,16 +187,16 @@ if st.button("Find similar players") and player.strip():
                 new_df, scaler, pca = reduce_dataset(position, df, 0.95)
             else:
                 new_df, scaler, pca = reduce_dataset(option, df, 0.95)
-
+ 
             player_data = pd.DataFrame(player_stats)
             norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis=1))
             new_player_data = pca.transform(norm_player_data)
             red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
-
+ 
             distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis=1), 'euclidean')
             distances = np.transpose(distances)
             distances = pd.DataFrame(data=distances, columns=['Distance'])
-
+ 
             player_info = [{
                 'player_id': player_id,
                 'name': name,
@@ -182,10 +205,10 @@ if st.button("Find similar players") and player.strip():
             player_info = pd.DataFrame(player_info)
             player_row = pd.concat([player_info, red_player_data], axis=1)
             new_df = pd.concat([new_df, player_row]).reset_index(drop=True)
-
+ 
             new_df = pd.concat([new_df, distances], axis=1)
             sorted_df = new_df.sort_values(by='Distance')
-
+ 
             st.subheader(f"Players most similar to {name}")
             counter = 1
             for index, row in sorted_df.iterrows():
