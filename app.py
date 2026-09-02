@@ -191,7 +191,7 @@ if chosen is not None:
         new_player_data = pca.transform(norm_player_data)
         red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
 
-        distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis=1), 'euclidean')
+        distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis=1), 'cosine')
         distances = np.transpose(distances)
         distances = pd.DataFrame(data=distances, columns=['Distance'])
 
