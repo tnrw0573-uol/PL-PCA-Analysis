@@ -130,7 +130,16 @@ while continuing:
         option = input("Compare player to all players (enter 'a') or players with same position? (enter 's'): ")
         if option.lower() in options:
             break
-        print(f'Invalid Input. Choose from {options}')
+        print(f'Invalid input. Choose from {options}')
+    
+    while True:
+        dist_opts = ['euclidean', 'manhattan', 'mahalanobis', 'minkowski', 'cosine']
+        dist_opt = input("Type the name of the distance you wish to measure similarity with:\n1. Euclidean\n2. Manhattan\n3. Mahalnobis\n4. Minkowski\n5. Cosine\n")
+        if dist_opt.lower() in dist_opts:
+            break
+        elif dist_opt.lower() == "manhattan":
+            dist_opt = "cityblock"
+        print(f'Invalid input. Choose from {dist_opts}')
 
     #Find player's league
     league_id, season_id = find_league_and_season(team_id, teams)
@@ -152,8 +161,8 @@ while continuing:
     new_player_data = pca.transform(norm_player_data)
     red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
 
-    #Calculate euclidean distance between player and the others
-    distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis = 1), 'euclidean')
+    #Calculate distance between player and the others
+    distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis = 1), f'{dist_opt}')
     #Transpose to make a column
     distances = np.transpose(distances)
     distances = pd.DataFrame(data=distances, columns=['Distance'])
@@ -178,7 +187,7 @@ while continuing:
         if row['name'] != name:
             print(f"{counter}. {row['name']}")
             counter += 1
-            if counter > 10:
+            if counter > 20:
                 break
 
     #Give user option to enter new player
