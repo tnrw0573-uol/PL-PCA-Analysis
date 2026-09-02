@@ -113,7 +113,7 @@ continuing = True
 while continuing:
     #Get player name and validate
     while True:
-        print("IMPORTANT: Player that have recently joined/left for clubs in the Big 5 leagues are unavailable")
+        print("IMPORTANT: Player that have recently switched between leagues are unavailable.")
         player = input("Enter player's full name: ").strip()
         if not player:
             print("Name cannot be empty.")
@@ -124,7 +124,7 @@ while continuing:
             print("Player not found. Try again.")
             continue  
         break
-    #Get option and validate
+    #Get option, wanted distance and validate
     while True:
         options = ['a', 's']
         option = input("Compare player to all players (enter 'a') or players with same position? (enter 's'): ")
@@ -132,15 +132,6 @@ while continuing:
             break
         print(f'Invalid input. Choose from {options}')
     
-    while True:
-        dist_opts = ['euclidean', 'manhattan', 'mahalanobis', 'minkowski', 'cosine']
-        dist_opt = input("Type the name of the distance you wish to measure similarity with:\n1. Euclidean\n2. Manhattan\n3. Mahalnobis\n4. Minkowski\n5. Cosine\n")
-        if dist_opt.lower() in dist_opts:
-            break
-        elif dist_opt.lower() == "manhattan":
-            dist_opt = "cityblock"
-        print(f'Invalid input. Choose from {dist_opts}')
-
     #Find player's league
     league_id, season_id = find_league_and_season(team_id, teams)
     #Get player stats for last season
@@ -162,7 +153,7 @@ while continuing:
     red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
 
     #Calculate distance between player and the others
-    distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis = 1), f'{dist_opt}')
+    distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis = 1), 'cosine')
     #Transpose to make a column
     distances = np.transpose(distances)
     distances = pd.DataFrame(data=distances, columns=['Distance'])
