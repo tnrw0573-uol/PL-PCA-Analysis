@@ -178,7 +178,7 @@ while continuing:
         if row['name'] != name:
             print(f"{counter}. {row['name']}")
             counter += 1
-            if counter > 20:
+            if counter > 10:
                 break
 
     #Give user option to enter new player
