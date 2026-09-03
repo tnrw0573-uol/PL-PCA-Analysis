@@ -186,6 +186,8 @@ if chosen is not None:
             new_df, scaler, pca = reduce_dataset(option, df, 0.95)
 
         player_data = pd.DataFrame(player_stats)
+        columns_with_nulls = player_data.columns[player_data.isna().any() == True].to_list()
+        player_data = player_data.drop(columns = columns_with_nulls)
         feature_cols = df.drop(['player_id', 'name', 'position'], axis=1).columns
         norm_player_data = scaler.transform(player_data[feature_cols])
         new_player_data = pca.transform(norm_player_data)
