@@ -10,9 +10,16 @@ import pandas as pd
 from scipy.spatial.distance import cdist
 import numpy as np
 
+#Base URL used for every API call. A path to an endpoint is added for every request
 base_url = "https://api.thestatsapi.com/api/football"
+
+"""
+headers(dict): HTTP request headers that are sent with each API call. 
+    - Authorization (str): The key needed to authenticate with the server.
+    - Content-Type (str): The content the server is to parse the response in.
+"""
 headers = {
-    'Authorization': 'Bearer fapi_iHb8rAyu8VA6WOtqDGsp7tvxDXRZLCWo',
+    'Authorization': f'Bearer {os.environ['STATS_API_KEY']}',
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
@@ -82,7 +89,7 @@ def find_player_stats(season_id, player_id, league_id, name):
         content = response.json()
         data = content['data']
         nineties_played = data['minutes_played'] / 90
-        player_stats.append({
+        raw_stats = {
             'player_id': data['player_id'],
             'name': name,
             'position': data['position'],
@@ -99,15 +106,20 @@ def find_player_stats(season_id, player_id, league_id, name):
             'tackles': data['defending']['tackles'] / nineties_played,
             'interceptions': data['defending']['interceptions'] / nineties_played,
             'ground_duels_won_percentage': data['duels']['ground_duels_won_percentage'],
-            'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played
-        })
+            'aerial_duels_won': data['duels']['aerial_duels_won'] / nineties_played,
+            'aerial_duels_won_percentage': data['duels']['aerial_duels_won_percentage'],
+            'total_duels_won': data['duels']['total_duels_won'] / nineties_played,
+            'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played,
+            'successful_dribbles_percentage': data['duels']['successful_dribbles_percentage']
+        }
+        player_stats.append({key: value for key, value in raw_stats.items()})
     return player_stats
 
 countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
 leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
-league_ids = find_league_ids(base_url, headers, countries, leagues)
+league_ids = find_league_ids(countries, leagues)
 season_ids = find_season(league_ids)
-teams = find_teams(base_url, headers, league_ids, season_ids)
+teams = find_teams(league_ids, season_ids)
 
 continuing = True
 while continuing:
@@ -148,6 +160,9 @@ while continuing:
 
     #Normalize and transform player's data using the same scaler and pca as the dataset
     player_data = pd.DataFrame(player_stats)
+    #Drop any missing stats
+    columns_with_nulls = player_data.columns[player_data.isna().any() == True].to_list()
+    player_data = player_data.drop(columns = columns_with_nulls)
     norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis = 1))
     new_player_data = pca.transform(norm_player_data)
     red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
