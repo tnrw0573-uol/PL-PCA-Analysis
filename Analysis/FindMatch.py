@@ -159,10 +159,8 @@ while continuing:
         new_df, scaler, pca = reduce_dataset(option, df, 0.95)
 
     #Normalize and transform player's data using the same scaler and pca as the dataset
-    player_data = pd.DataFrame(player_stats)
-    #Drop any missing stats
-    columns_with_nulls = player_data.columns[player_data.isna().any() == True].to_list()
-    player_data = player_data.drop(columns = columns_with_nulls)
+    player_data = pd.DataFrame(player_stats).reindex(columns=df.columns)
+    #Drop the missing stats
     norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis = 1))
     new_player_data = pca.transform(norm_player_data)
     red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
@@ -197,6 +195,6 @@ while continuing:
                 break
 
     #Give user option to enter new player
-    cont_option = input("Enter another player? (y/n): ")
-    if cont_option.lower() == "n":
+    cont_option = input("Enter another player? (Enter 'y' for yes): ")
+    if cont_option.lower() != "y":
         break
