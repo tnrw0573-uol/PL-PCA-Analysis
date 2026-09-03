@@ -53,7 +53,7 @@ def find_league_ids(countries, leagues):
                league_ids.append(result['id'])
     return league_ids
 
-def find_seasons_id(league_ids):
+def find_season_ids(league_ids):
     """
     Finds the ID of each league's last season. If a league is at least halfway done, it finds the ID of the current season.
     Args:
@@ -99,7 +99,7 @@ def find_teams(league_ids, season_ids):
                 })
     return team_ids
 
-def find_player_ids(team_ids):
+def find_players(team_ids):
     """
     Finds every player in the Big 5 leagues.
     Args:
@@ -141,7 +141,7 @@ def find_player_stats(players):
             if data['minutes_played'] >= 1000:
                 #Account for per 90 stats only so stats aren't biased towards players who have simply played more than others
                 nineties_played = data['minutes_played'] / 90
-                raw_stats = {
+                player_stats.append({
                     'player_id': data['player_id'],
                     'name': player['name'],
                     'position': data['position'],
@@ -163,20 +163,19 @@ def find_player_stats(players):
                     'total_duels_won_percentage': data['duels']['total_duels_won_percentage'],
                     'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played,
                     'successful_dribbles_percentage': data['duels']['successful_dribbles_percentage']
-                }
-                #Leave out any stats that are null
-                player_stats.append({key : value for key, value in raw_stats.items()})
-            #Time interval of 0.5s between requests to avoid exceeding rate limit
+                })
+            #Time interval of 0.5s between requests to avoid exceeding rate limit of API calls
             time.sleep(0.5)
     return player_stats
 
+#Only run if not being imported by another file
 if __name__ == "__main__":
     countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
     leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
     league_ids = find_league_ids(countries, leagues)
-    season_ids = find_seasons_id(league_ids)
+    season_ids = find_season_ids(league_ids)
     team_ids = find_teams(league_ids, season_ids)
-    players = find_player_ids(team_ids)
+    players = find_players(team_ids)
     player_stats = find_player_stats(players)
     pprint(player_stats)
     #Convert player stats to dataframe and export as a csv file
