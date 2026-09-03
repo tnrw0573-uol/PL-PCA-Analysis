@@ -163,10 +163,10 @@ def find_player_stats(players):
                     'total_duels_won': data['duels']['total_duels_won'] / nineties_played,
                     'total_duels_won_percentage': data['duels']['total_duels_won_percentage'],
                     'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played,
-                    'succesful_dribbles_percentage': data['duels']['successful_dribbles_percentage']
+                    'successful_dribbles_percentage': data['duels']['successful_dribbles_percentage']
                 }
                 #Leave out any stats that are null
-                player_stats.append({key : value for key, value in raw_stats.items() if value is not None})
+                player_stats.append({key : value for key, value in raw_stats.items()})
             #Time interval of 0.5s between requests to avoid exceeding rate limit
             time.sleep(0.5)
     return player_stats
@@ -182,5 +182,9 @@ if __name__ == "__main__":
     pprint(player_stats)
     #Convert player stats to dataframe and export as a csv file
     df = pd.DataFrame(player_stats)
+    #Look for stats with at least one null value and drop, I chose to drop these stats as there are only a few that need to be dropped, so it won't affect the analysis that much
+    columns_with_nulls = df.columns[df.isna().any() == True].to_list()
+    df = df.drop(columns = columns_with_nulls)
+    #Convert and export as csv file
     df.to_csv('Data/player_stats.csv', index = False)
 
