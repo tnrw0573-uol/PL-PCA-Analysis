@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pprint import pprint 
-from Data.fetchdata import response_success, find_teams, find_league_ids
+from Data.fetchdata import response_success, find_teams, find_league_ids, find_season_ids
 from datetime import datetime
 from Analysis.PCA import reduce_dataset
 import pandas as pd
@@ -25,8 +25,19 @@ headers = {
 current_year = datetime.now().year
 
 def find_player(player, teams):
+    """Finds the player the user wants.
+    Args:
+        player (str): The player's name inputted by the user.
+        teams (list[dict]): A list of every team with their ID, league and season.
+    Returns:
+        player_id (str): The player's ID.
+        team_id (str): The player's team ID.
+        name (str): The player's name, with diacritics, hyphens etc.
+        position (str): The player's position
+    """
+    #Search for the player
     response = requests.get(f"{base_url}/players", headers=headers, params={'search': f'{player}'})
-    if response_success(response) != True:
+    if response_success(response) != True: #if response fails
         return None, None, None, None
 
     content = response.json()
@@ -36,11 +47,13 @@ def find_player(player, teams):
     team_ids = [t['id'] for t in teams]
     data = [p for p in data if p.get('current_team') and p['current_team']['id'] in team_ids]
 
+    #Return None if player isn't found
     if len(data) == 0:
         return None, None, None, None
 
     if len(data) == 1:
         chosen = data[0]
+    #If there are multiple players with the same name, present the user with an option to choose their intended choice
     else:
         print("\nMultiple players found:")
         for i, p in enumerate(data):
@@ -54,42 +67,50 @@ def find_player(player, teams):
                 break
             print("Invalid choice. Try again.")
 
+    #Return the info of the user chosen player
     player_id = chosen['id']
     team_id = chosen['current_team']['id']
     name = chosen['name']
     position = chosen['position']
     return player_id, team_id, name, position
 
-def find_league_and_season(team_id, teams):
+def find_player_league_season(team_id, teams):
+    """Finds the player's league and the league's relevant season.
+    Args:
+        team_id (str): The player's team ID.
+        teams (list[dict]): A list of every team with their ID, league and season.
+    Returns:
+        league_id (str): The player's league's ID.
+        season_id (str): The league's season ID for the relevant season.
+    """
     league_id = []
     season_id = []
+    #Search for the player's team
     for team in teams:
         if team['id'] == team_id:
             league_id.append(team['league_id'])
             season_id.append(team['season_id'])
     return league_id, season_id
 
-def find_season(league_ids):
-    season_ids = []
-    for league in league_ids:
-        response = requests.get(f"{base_url}/competitions/{league}/seasons", headers=headers)
-        if response_success(response) == True:
-            content = response.json()
-            data = content['data']
-            for season in data:
-                if season['end_year'] == current_year:
-                    season_ids.append(season['id'])
-    return season_ids
-
 def find_player_stats(season_id, player_id, league_id, name):
+    """
+    Finds the player's stats for the relevant season.
+    Args:
+        season_id (str): The league's season ID for the relevant season.
+        player_id (str): The player's ID.
+        league_id (str): The player's league ID.
+        name (str): The player's name.
+    """
+    #Search for the stats
     response = requests.get(f"{base_url}/players/{player_id}/stats", headers=headers, params={
         'season_id': f'{season_id[0]}',
         'competition_id': f'{league_id[0]}'})
     if response_success(response) == True:
         content = response.json()
         data = content['data']
-        nineties_played = data['minutes_played'] / 90
-        raw_stats = {
+        nineties_played = data['minutes_played'] / 90 #Just like for other players in the dataframe, account for per 90 stats
+        #Construct list of player, player's information and player's stats 
+        player_stats.append({
             'player_id': data['player_id'],
             'name': name,
             'position': data['position'],
@@ -108,17 +129,16 @@ def find_player_stats(season_id, player_id, league_id, name):
             'ground_duels_won_percentage': data['duels']['ground_duels_won_percentage'],
             'aerial_duels_won': data['duels']['aerial_duels_won'] / nineties_played,
             'aerial_duels_won_percentage': data['duels']['aerial_duels_won_percentage'],
-            'total_duels_won': data['duels']['total_duels_won'] / nineties_played,
             'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played,
             'successful_dribbles_percentage': data['duels']['successful_dribbles_percentage']
-        }
-        player_stats.append({key: value for key, value in raw_stats.items()})
+        })
     return player_stats
 
+#Construct a list of every Big 5 league team and their ID, league and season ID for the relevant season.
 countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
 leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
 league_ids = find_league_ids(countries, leagues)
-season_ids = find_season(league_ids)
+season_ids = find_season_ids(league_ids)
 teams = find_teams(league_ids, season_ids)
 
 continuing = True
@@ -127,47 +147,49 @@ while continuing:
     while True:
         print("IMPORTANT: Player that have recently switched between leagues are unavailable.")
         player = input("Enter player's full name: ").strip()
-        if not player:
+        if not player: #If user doesn't enter anything
             print("Name cannot be empty.")
             continue
-
+        #Find player info
         player_id, team_id, name, position = find_player(player, teams)
-        if player_id is None:
+        #If player not found, print a message and prompt the user again
+        if player_id is None: 
             print("Player not found. Try again.")
             continue  
         break
-    #Get option, wanted distance and validate
+
     while True:
         options = ['a', 's']
         option = input("Compare player to all players (enter 'a') or players with same position? (enter 's'): ")
+        #If user enters an invalid option, prompt the user again
         if option.lower() in options:
             break
         print(f'Invalid input. Choose from {options}')
     
-    #Find player's league
-    league_id, season_id = find_league_and_season(team_id, teams)
+    #Find player's season
+    league_id, season_id = find_player_league_season(team_id, teams)
     #Get player stats for last season
     player_stats = []
     player_stats = find_player_stats(season_id, player_id, league_id, name)
 
     #Load dataset
     df = pd.read_csv('Data/player_stats.csv')
-    #Reduce dataset
-    if option == 's':
+    #Reduce dataset: Compress the stats down to fewer components that explain 95% of the variance
+    if option == 's': #if player chose to compare player to those of the same position
         new_df, scaler, pca = reduce_dataset(position, df, 0.95)
-    else:
+    else: #if player chose to compare player to every other player
         new_df, scaler, pca = reduce_dataset(option, df, 0.95)
 
-    #Normalize and transform player's data using the same scaler and pca as the dataset
+    #Make player's stats have the same features as the other players
     player_data = pd.DataFrame(player_stats).reindex(columns=df.columns)
-    #Drop the missing stats
-    norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis = 1))
+    #Normalise and transform the player's data with the same scaler and pca as the dataset
+    norm_player_data = scaler.transform(player_data.drop(['player_id', 'name', 'position'], axis = 1)) #omit non-numeric stats
     new_player_data = pca.transform(norm_player_data)
     red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
 
-    #Calculate distance between player and the others
+    #Calculate cosine distance between player and every other player
     distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis = 1), 'cosine')
-    #Transpose to make a column
+    #Transpose and make a column of the distances ready to add to the dataset
     distances = np.transpose(distances)
     distances = pd.DataFrame(data=distances, columns=['Distance'])
 
@@ -186,9 +208,10 @@ while continuing:
     #Sort by distance (ascending)
     sorted_df = new_df.sort_values(by='Distance')
 
+    #Show top 10 closest matches  
     counter = 1
     for index, row in sorted_df.iterrows():
-        if row['name'] != name:
+        if row['name'] != name: #Avoid showing the same player as the one inputted 
             print(f"{counter}. {row['name']}")
             counter += 1
             if counter > 10:
@@ -197,4 +220,4 @@ while continuing:
     #Give user option to enter new player
     cont_option = input("Enter another player? (Enter 'y' for yes): ")
     if cont_option.lower() != "y":
-        break
+        break #Quit
