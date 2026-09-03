@@ -11,9 +11,15 @@ headers = {
 }
 current_year = datetime.now().year
 
-#Check response and handle errors
 def response_success(response):
-    if response.status_code == 200:
+    """
+    Checks if the response was successful.   
+    Args:
+        response (requests.Response): The response given after calling the API.   
+    Returns:
+        bool: True if the response was successful, False otherwise.
+    """
+    if response.status_code == 200: #200 is the code for a successful response
         return True
     return False
 
