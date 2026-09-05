@@ -31,21 +31,18 @@ def get_data():
 
 df, teams = get_data()
 
+if 'candidates' not in st.session_state:
+    st.session_state.candidates = None
+if 'search_name' not in st.session_state:
+    st.session_state.search_name = None
+
 st.title("Big 5 Leagues Player Similarity Finder")
 st.warning("IMPORTANT: Player that have recently switched between leagues are unavailable.")
 #Ask user for player
 player = st.text_input("Enter player's full name:")
 option = st.radio("Compare player to all players or players with the same position?", ['All', 'Same'])
 
-if st.button("Search") and player.strip(): #If user presses search button
-    #Find player info
-    player_id, team_id, name, position = find_player(player.strip(), teams) 
-    if player_id is None:
-        st.error("Player not found.")
-        st.session_state.candidates = None
-    else:
-        st.session_state.candidates = player_id, team_id, name, position
-        st.session_state.search_name = player.strip()
+
 
 
 
