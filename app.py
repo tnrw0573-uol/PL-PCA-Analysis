@@ -104,12 +104,12 @@ def find_player_stats(season_id, player_id, league_id, name):
 
 @st.cache_data(ttl=3600)
 def get_league_ids():
-    return find_league_ids(base_url, headers, countries, leagues)
+    return find_league_ids(countries, leagues)
 
 
 @st.cache_data(ttl=3600)
 def get_teams(league_ids, season_ids):
-    return find_teams(base_url, headers, league_ids, season_ids)
+    return find_teams(league_ids, season_ids)
 
 
 @st.cache_data
