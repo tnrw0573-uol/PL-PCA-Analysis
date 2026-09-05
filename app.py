@@ -20,16 +20,39 @@ current_year = datetime.now().year
 @st.cache_data(ttl=3600)
 def get_data():
     #Load dataset
-    df = pd.read_csv('Data/player_stats.csv')
-    #Get every Big 5 League team, their league and relevant season
-    countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
-    leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
-    league_ids = find_league_ids(countries, leagues)
-    season_ids = find_season_ids(league_ids)
-    teams = find_teams(league_ids, season_ids)
-    return df, teams
+    return pd.read_csv('Data/player_stats.csv')
 
-df, teams = get_data()
+@st.cache_data(ttl=3600)
+def get_league_ids():
+    return find_league_ids(countries, leagues)
+
+@st.cache_data(ttl=3600)
+def get_season_ids():
+    return find_season_ids(league_ids)
+
+@st.cache_data(ttl=3600)
+def get_teams():
+    return find_teams(league_ids, season_ids)
+
+@st.cache_data(ttl=3600)
+def get_player():
+    return find_player(player, teams)
+
+@st.cache_data(ttl=3600)
+def get_player_league_season():
+    return find_player_league_season(team_id, teams)
+
+@st.cache_data(ttl=3600)
+def get_player_stats():
+    return find_player_stats(season_id, player_id, league_id)
+
+df = get_data()
+#Get every Big 5 League team, their league and relevant season
+countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
+leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
+league_ids = get_league_ids(countries, leagues)
+season_ids = get_season_ids(league_ids)
+teams = get_teams(league_ids, season_ids)
 
 if 'candidates' not in st.session_state:
     st.session_state.candidates = None
