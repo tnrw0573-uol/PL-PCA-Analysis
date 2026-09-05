@@ -9,6 +9,7 @@ from Analysis.PCA import reduce_dataset
 import pandas as pd
 from scipy.spatial.distance import cdist
 import numpy as np
+import streamlit as st
 
 #Base URL used for every API call. A path to an endpoint is added for every request
 base_url = "https://api.thestatsapi.com/api/football"
@@ -19,7 +20,7 @@ headers(dict): HTTP request headers that are sent with each API call.
     - Content-Type (str): The content the server is to parse the response in.
 """
 headers = {
-    'Authorization': f'Bearer {os.environ['STATS_API_KEY']}',
+    'Authorization': f'Bearer {st.secrets['API_KEY']}',
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
