@@ -51,7 +51,7 @@ countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
 leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
 league_ids = get_league_ids()
 season_ids = get_season_ids()
-teams = get_teams()
+teams = get_teams(league_ids, season_ids)
 
 if 'candidates' not in st.session_state:
     st.session_state.candidates = None
