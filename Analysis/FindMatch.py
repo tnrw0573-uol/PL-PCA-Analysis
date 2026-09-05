@@ -56,7 +56,7 @@ def find_player(player, teams):
 
     #Return None if player isn't found
     if len(data) == 0:
-        return None, None, None, None
+        return {'id': None}
 
     if len(data) == 1:
         chosen = data[0]
@@ -75,11 +75,7 @@ def find_player(player, teams):
             print("Invalid choice. Try again.")
 
     #Return the info of the user chosen player
-    player_id = chosen['id']
-    team_id = chosen['current_team']['id']
-    name = chosen['name']
-    position = chosen['position']
-    return player_id, team_id, name, position
+    return chosen
 
 def find_player_league_season(team_id, teams):
     """Finds the player's league and the league's relevant season.
@@ -99,7 +95,7 @@ def find_player_league_season(team_id, teams):
             season_id.append(team['season_id'])
     return league_id, season_id
 
-def find_player_stats(season_id, player_id, league_id, name):
+def find_player_stats(season_id, player_id, league_id, name, player_stats):
     """
     Finds the player's stats for the relevant season.
     Args:
@@ -152,9 +148,9 @@ if __name__ == "__main__":
                 print("Name cannot be empty.")
                 continue
             #Find player info
-            player_id, team_id, name, position = find_player(player, teams)
+            chosen = find_player(player, teams)
             #If player not found, print a message and prompt the user again
-            if player_id is None: 
+            if chosen['id'] is None: 
                 print("Player not found. Try again.")
                 continue  
             break
@@ -166,12 +162,16 @@ if __name__ == "__main__":
             if option.lower() in options:
                 break
             print(f'Invalid input. Choose from {options}')
-        
+
+        player_id = chosen['id']
+        team_id = chosen['current_team']['id']
+        name = chosen['name']
+        position = chosen['position']
         #Find player's season
         league_id, season_id = find_player_league_season(team_id, teams)
         #Get player stats for last season
         player_stats = []
-        player_stats = find_player_stats(season_id, player_id, league_id, name)
+        player_stats = find_player_stats(season_id, player_id, league_id, name, player_stats)
 
         #Load dataset
         df = pd.read_csv('Data/player_stats.csv')
