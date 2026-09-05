@@ -161,7 +161,6 @@ def find_player_stats(players):
                     'ground_duels_won_percentage': data['duels']['ground_duels_won_percentage'],
                     'aerial_duels_won': data['duels']['aerial_duels_won'] / nineties_played,
                     'aerial_duels_won_percentage': data['duels']['aerial_duels_won_percentage'],
-                    'total_duels_won_percentage': data['duels']['total_duels_won_percentage'],
                     'successful_dribbles': data['duels']['successful_dribbles'] / nineties_played,
                     'successful_dribbles_percentage': data['duels']['successful_dribbles_percentage']
                 })
