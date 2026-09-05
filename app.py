@@ -30,7 +30,7 @@ def get_season_ids():
     return find_season_ids(league_ids)
 
 @st.cache_data(ttl=3600)
-def get_teams():
+def get_teams(league_ids, season_ids):
     return find_teams(league_ids, season_ids)
 
 @st.cache_data(ttl=3600)
