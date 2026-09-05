@@ -4,7 +4,6 @@ from scipy.spatial.distance import cdist
 import numpy as np
 from pprint import pprint
 from datetime import datetime
-import os
 
 from Data.fetchdata import find_teams, find_league_ids, find_season_ids
 from Analysis.FindMatch import find_player, find_player_league_season, find_player_stats
@@ -12,7 +11,7 @@ from Analysis.PCA import reduce_dataset
 
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {
-    'Authorization': f"Bearer {os.environ['STATS_API_KEY']}",
+    'Authorization': f"Bearer {st.secrets['STATS_API_KEY']}",
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
