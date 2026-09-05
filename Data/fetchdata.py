@@ -4,6 +4,7 @@ from datetime import datetime
 from pprint import pprint
 import pandas as pd
 import os
+import streamlit as st
 
 #Base URL for the API endpoints, requests are made by appending a path to this
 base_url = "https://api.thestatsapi.com/api/football"
@@ -14,7 +15,7 @@ headers(dict): HTTP request headers that are sent with each API call.
     - Content-Type (str): The content the server is to parse the response in.
 """
 headers = {
-    'Authorization': f'Bearer {os.environ['STATS_API_KEY']}',
+    'Authorization': f'Bearer {st.secrets['API_KEY']}',
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
