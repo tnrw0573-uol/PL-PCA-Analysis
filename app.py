@@ -84,7 +84,7 @@ if st.button("Find similar players") and player.strip():
         player_stats = get_player_stats(season_id, player_id, league_id, name, player_stats)
 
         if not player_stats:
-            st.error("Player recently left a club.")
+            st.error("Player recently switched leagues.")
         else:
             if option == 'Same':
                 new_df, scaler, pca = reduce_dataset(position, df, 0.95)
