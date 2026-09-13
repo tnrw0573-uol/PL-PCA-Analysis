@@ -38,38 +38,20 @@ def find_player(player):
         player (str): The player's name inputted by the user.
         teams (list[dict]): A list of every team with their ID, league and season.
     Returns:
-        player_id (str): The player's ID.
-        name (str): The player's name.
+        data(list[dict]): A list of the players matching the search.
     """
     #Search for the player
     response = requests.get(f"{base_url}/players", headers=headers, params={'search': f'{player}'})
     if response_success(response) != True: #if response fails
         return None, None
-
     content = response.json()
     data = content['data']
 
     #Return None if player isn't found
     if len(data) == 0:
         return None, None
-
-    if len(data) == 1:
-        chosen = data[0]
-    #If there are multiple players with the same name, present the user with an option to choose their intended choice
-    else:
-        print("\nMultiple players found:")
-        for i, p in enumerate(data):
-            team_name = p['current_team']['name'] if p.get('current_team') else 'Unknown'
-            print(f"{i+1}. {p['name']} - {team_name} - {p['position']}")
-
-        while True:
-            choice = input(f"Enter the number of the correct player (1-{len(data)}): ").strip()
-            if choice.isdigit() and 1 <= int(choice) <= len(data):
-                chosen = data[int(choice) - 1]
-                break
-            print("Invalid choice. Try again.")
-    #Return the id and name of the chosen player
-    return chosen['id'], chosen['name']
+    #Return the players that match
+    return data
 
 def find_player_stats(player_id, name, player_stats, league_ids, season_ids):
     """
@@ -123,17 +105,31 @@ if __name__ == "__main__":
     while continuing:
         #Get player name and validate
         while True:
-            print("IMPORTANT: Player that have recently switched between leagues are unavailable.")
             player = input("Enter player's full name: ").strip()
             if not player: #If user doesn't enter anything
                 print("Name cannot be empty.")
                 continue
             #Find player id
-            player_id, name = find_player(player)
+            data = find_player(player)
             #If player not found, print a message and prompt the user again
-            if player_id is None: 
+            if data is None: 
                 print("Player not found. Try again.")
-                continue  
+                continue 
+            elif len(data) == 1:
+                chosen = data[0]
+            #If there are multiple players with the same name, present the user with an option to choose their intended choice
+            else:
+                print("\nMultiple players found:")
+                for i, p in enumerate(data):
+                    team_name = p['current_team']['name'] if p.get('current_team') else 'Unknown'
+                    print(f"{i+1}. {p['name']} - {team_name} - {p['position']}")
+            
+                while True:
+                    choice = input(f"Enter the number of the correct player (1-{len(data)}): ").strip()
+                    if choice.isdigit() and 1 <= int(choice) <= len(data):
+                        chosen = data[int(choice) - 1]
+                        break
+                    print("Invalid choice. Try again.")
             break
 
         while True:
@@ -144,6 +140,8 @@ if __name__ == "__main__":
                 break
             print(f'Invalid input. Choose from {options}')
 
+        player_id = chosen['id']
+        name = chosen['name']
         #Get player stats for last season
         player_stats = []
         player_stats = find_player_stats(player_id, name, player_stats, league_ids, season_ids)
