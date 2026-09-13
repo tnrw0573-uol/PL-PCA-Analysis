@@ -82,7 +82,7 @@ def find_teams(league_ids, season_ids):
         league_ids (list): A list of each league's ID.
         season_ids (list): A list of the relevant season's ID for each league.
     Returns:
-        team_ids (list[dict]): A list consisting of each team's ID, league and the season.
+        team_ids (list): A list of every team's ID.
     """
     team_ids = []
     #Associate the nth league ID with the nth season ID
@@ -93,11 +93,7 @@ def find_teams(league_ids, season_ids):
             content = response.json()
             data = content['data']
             for team in data:
-                team_ids.append({
-                    'id': team['team']['id'],
-                    'league_id': league,
-                    'season_id': season
-                })
+                team_ids.append(team['team']['id'])
     return team_ids
 
 def find_players(team_ids):
