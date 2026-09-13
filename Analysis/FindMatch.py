@@ -105,7 +105,7 @@ if __name__ == "__main__":
     while continuing:
         #Get player name and validate
         while True:
-            player = input("Enter player's full name: ").strip()
+            player = input("Enter player's name: ").strip()
             if not player: #If user doesn't enter anything
                 print("Name cannot be empty.")
                 continue
