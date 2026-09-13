@@ -59,7 +59,7 @@ if 'search_name' not in st.session_state:
 
 st.title("Big 5 Leagues Player Similarity Finder 25/26")
 #Ask user for player
-player = st.text_input("Enter any player's full name:")
+player = st.text_input("Enter any player's name:")
 option = st.radio("Compare player to all players or players with the same position?", ['All', 'Same'])
 
 
