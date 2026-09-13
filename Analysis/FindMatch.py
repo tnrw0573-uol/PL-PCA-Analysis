@@ -20,7 +20,7 @@ headers(dict): HTTP request headers that are sent with each API call.
     - Content-Type (str): The content the server is to parse the response in.
 """
 headers = {
-    'Authorization': f'Bearer {os.environ['STATS_API_KEY']}',
+    'Authorization': f'Bearer {st.secrets['STATS_API_KEY']}',
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
