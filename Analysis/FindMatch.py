@@ -38,20 +38,33 @@ def find_player(player):
         player (str): The player's name inputted by the user.
         teams (list[dict]): A list of every team with their ID, league and season.
     Returns:
-        data(list[dict]): A list of the players matching the search.
+        players(list[dict]): A list of the players matching the search.
     """
-    #Search for the player
-    response = requests.get(f"{base_url}/players", headers=headers, params={'search': f'{player}'})
-    if response_success(response) != True: #if response fails
-        return None, None
-    content = response.json()
-    data = content['data']
+    page = 1
+    players = []
+    while True:
+        #Search for the player
+        response = requests.get(f"{base_url}/players", headers=headers, params={
+            'search': f'{player}',
+            'page': page,
+            'per_page': 100})
+        if response_success(response) != True: #if response fails
+            return None
+        content = response.json()
+        data = content['data']
+        meta = content['meta']
 
-    #Return None if player isn't found
-    if len(data) == 0:
-        return None, None
+        #Only return players that currently play in the Big 5 leagues
+        for p in data:
+            if p['current_team']['id'] in teams:
+                players.append(p)
+
+        if page >= meta['total_pages']:
+            break
+
+        page += 1
     #Return the players that match
-    return data
+    return players 
 
 def find_player_stats(player_id, name, player_stats, league_ids, season_ids):
     """
@@ -105,6 +118,7 @@ if __name__ == "__main__":
     while continuing:
         #Get player name and validate
         while True:
+            print("IMPORTANT: Players who have moved to a club outside of the Big 5 leagues are unavailable for comparison.")
             player = input("Enter player's name: ").strip()
             if not player: #If user doesn't enter anything
                 print("Name cannot be empty.")
@@ -112,25 +126,25 @@ if __name__ == "__main__":
             elif len(player) < 3:
                 print("Name not long enough.")
                 continue
-            #Find player id
-            data = find_player(player)
-            #If player not found, print a message and prompt the user again
-            if data is None: 
-                print("Player not found. Try again.")
+            #Find matching players
+            players = find_player(player)
+            #If no players found, print a message and prompt the user again
+            if len(players) == 0: 
+                print("Players not found. Try again.")
                 continue 
-            elif len(data) == 1:
-                chosen = data[0]
+            elif len(players) == 1:
+                chosen = players[0]
             #If there are multiple players with the same name, present the user with an option to choose their intended choice
             else:
                 print("\nMultiple players found:")
-                for i, p in enumerate(data):
+                for i, p in enumerate(players):
                     team_name = p['current_team']['name'] if p.get('current_team') else 'Unknown'
                     print(f"{i+1}. {p['name']} - {team_name} - {p['position']}")
             
                 while True:
-                    choice = input(f"Enter the number of the correct player (1-{len(data)}): ").strip()
-                    if choice.isdigit() and 1 <= int(choice) <= len(data):
-                        chosen = data[int(choice) - 1]
+                    choice = input(f"Enter the number of the correct player (1-{len(players)}): ").strip()
+                    if choice.isdigit() and 1 <= int(choice) <= len(players):
+                        chosen = players[int(choice) - 1]
                         break
                     print("Invalid choice. Try again.")
             break
