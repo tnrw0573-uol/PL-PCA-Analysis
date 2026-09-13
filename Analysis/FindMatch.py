@@ -20,7 +20,7 @@ headers(dict): HTTP request headers that are sent with each API call.
     - Content-Type (str): The content the server is to parse the response in.
 """
 headers = {
-    'Authorization': f'Bearer {st.secrets['API_KEY']}',
+    'Authorization': f'Bearer {os.environ['STATS_API_KEY']}',
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
@@ -108,6 +108,9 @@ if __name__ == "__main__":
             player = input("Enter player's full name: ").strip()
             if not player: #If user doesn't enter anything
                 print("Name cannot be empty.")
+                continue
+            elif len(player) < 3:
+                print("Name not long enough.")
                 continue
             #Find player id
             data = find_player(player)
