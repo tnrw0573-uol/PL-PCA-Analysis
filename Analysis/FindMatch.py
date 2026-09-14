@@ -118,7 +118,7 @@ if __name__ == "__main__":
     while continuing:
         #Get player name and validate
         while True:
-            print("IMPORTANT: Players who have moved to a club outside of the Big 5 leagues are unavailable for comparison.")
+            print("IMPORTANT: Players who have moved to a club outside of the Big 5 leagues, or have signed for newly promoted teams are unavailable for comparison.")
             player = input("Enter player's name: ").strip()
             if not player: #If user doesn't enter anything
                 print("Name cannot be empty.")
