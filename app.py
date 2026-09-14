@@ -58,7 +58,7 @@ if 'search_name' not in st.session_state:
     st.session_state.search_name = None
 
 st.title("Big 5 Leagues Player Similarity Finder 25/26")
-st.warning("IMPORTANT: Players who have moved to a club outside of the Big 5 leagues are unavailable for comparison.")
+st.warning("IMPORTANT: Players who have moved to a club outside of the Big 5 leagues or signed for newly promoted teams are unavailable for comparison.")
 #Ask user for player
 player = st.text_input("Enter any player's name:")
 option = st.radio("Compare player to all players or players with the same position?", ['All', 'Same'])
