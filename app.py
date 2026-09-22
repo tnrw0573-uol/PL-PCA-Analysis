@@ -4,9 +4,12 @@ from scipy.spatial.distance import cdist
 import numpy as np
 from pprint import pprint
 from datetime import datetime
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from Data.fetchdata import find_teams, find_league_ids, find_season_ids
-from Analysis.FindMatch import find_player, find_player_league_season, find_player_stats
+from Analysis.FindMatch import find_player, find_player_stats
 from Analysis.PCA import reduce_dataset
 
 base_url = "https://api.thestatsapi.com/api/football"
@@ -26,7 +29,7 @@ def get_league_ids():
     return find_league_ids(countries, leagues)
 
 @st.cache_data(ttl=3600)
-def get_season_ids():
+def get_season_ids(league_ids):
     return find_season_ids(league_ids)
 
 @st.cache_data(ttl=3600)
@@ -34,23 +37,19 @@ def get_teams(league_ids, season_ids):
     return find_teams(league_ids, season_ids)
 
 @st.cache_data(ttl=3600)
-def get_player():
-    return find_player(player, teams)
+def get_player(player):
+    return find_player(player)
 
 @st.cache_data(ttl=3600)
-def get_player_league_season(team_id, teams):
-    return find_player_league_season(team_id, teams)
-
-@st.cache_data(ttl=3600)
-def get_player_stats(season_id, player_id, league_id, name, player_stats):
-    return find_player_stats(season_id, player_id, league_id, name, player_stats)
+def get_player_stats(season_ids, player_id, league_ids, name, player_stats):
+    return find_player_stats(player_id, name, player_stats, league_ids, season_ids)
 
 df = get_data()
 #Get every Big 5 League team, their league and relevant season
 countries = ['England', 'Italy', 'Spain', 'Germany', 'France']
 leagues = ['Premier League', 'Serie A', 'LaLiga', 'Bundesliga', 'Ligue 1']
 league_ids = get_league_ids()
-season_ids = get_season_ids()
+season_ids = get_season_ids(league_ids)
 teams = get_teams(league_ids, season_ids)
 
 if 'candidates' not in st.session_state:
@@ -58,69 +57,95 @@ if 'candidates' not in st.session_state:
 if 'search_name' not in st.session_state:
     st.session_state.search_name = None
 
-st.title("Big 5 Leagues Player Similarity Finder")
-st.warning("IMPORTANT: Player that have recently switched between leagues are unavailable.")
+st.title("Big 5 Leagues Player Similarity Finder 25/26")
+st.warning("IMPORTANT: Players who have moved to a club outside of the Big 5 leagues or signed for newly promoted teams are unavailable for comparison.")
 #Ask user for player
-player = st.text_input("Enter player's full name:")
+player = st.text_input("Enter any player's name:")
 option = st.radio("Compare player to all players or players with the same position?", ['All', 'Same'])
 
 
 if st.button("Find similar players") and player.strip():
-    data = find_player(player.strip(), teams)
-    if data['id'] is None:
+    players = get_player(player.strip())
+    #Show error message if no players matched
+    if len(players) == 0:
         st.error("Player not found.")
         st.session_state.candidates = None
     else:
-        st.session_state.candidates = data
+        st.session_state.candidates = players
         st.session_state.search_name = player.strip()
-    
-        player_id = data['id']
-        team_id = data['current_team']['id']
-        name = data['name']
-        position = data['position']
 
-        league_id, season_id = get_player_league_season(team_id, teams)
-        player_stats = []
-        player_stats = get_player_stats(season_id, player_id, league_id, name, player_stats)
+chosen = None
+if st.session_state.candidates is not None:
+    #Get match/es 
+    candidates = st.session_state.candidates
+    #If there is one match, use that, otherwise ask the user to choose their intended player
+    if len(candidates) == 1:
+        chosen = candidates[0]
+    else:
+        st.write("Multiple players found:")
+        labels = [f"{p['name']} - {p['current_team']['name']} - {p['position']}" for p in candidates]
+        selected_label = st.radio("Choose the correct player:", labels)
+        if st.button("Confirm player"):
+            chosen = candidates[labels.index(selected_label)]
 
-        if not player_stats:
-            st.error("Player recently switched leagues.")
+
+if chosen is not None:
+    player_id = chosen['id']
+    name = chosen['name']
+
+    #Get player stats
+    player_stats = []
+    player_stats = get_player_stats(season_ids, player_id, league_ids, name, player_stats)
+
+    if not player_stats:
+        st.error("Player didn't play in the Big 5 leagues.")
+    else:
+        position = player_stats[0]['position']
+        #Reduce dataset, if user chose position-specific comparison use just the players in that position
+        if option == 'Same':
+            new_df, scaler, pca = reduce_dataset(position, df, 0.95)
         else:
-            if option == 'Same':
-                new_df, scaler, pca = reduce_dataset(position, df, 0.95)
-            else:
-                option = 'a'
-                new_df, scaler, pca = reduce_dataset(option, df, 0.95)
+            new_df, scaler, pca = reduce_dataset('a', df, 0.95)
 
-            player_data = pd.DataFrame(player_stats).reindex(columns=df.columns)
-            columns_with_nulls = player_data.columns[player_data.isna().any() == True].to_list()
-            player_data = player_data.drop(columns = columns_with_nulls)
-            feature_cols = df.drop(['player_id', 'name', 'position'], axis=1).columns
-            norm_player_data = scaler.transform(player_data[feature_cols])
-            new_player_data = pca.transform(norm_player_data)
-            red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
+        #Make a row of the player's stats
+        player_data = pd.DataFrame(player_stats).reindex(columns=df.columns)
+        #Drop any stats with null values
+        columns_with_nulls = player_data.columns[player_data.isna().any() == True].to_list()
+        player_data = player_data.drop(columns=columns_with_nulls)
 
-            distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis=1), 'cosine')
-            distances = np.transpose(distances)
-            distances = pd.DataFrame(data=distances, columns=['Distance'])
+        #Transform the player's stats using the same scaler and pca as the rest of the dataset
+        feature_cols = df.drop(['player_id', 'name', 'position'], axis=1).columns #Drop non-numeric rows
+        norm_player_data = scaler.transform(player_data[feature_cols])
+        new_player_data = pca.transform(norm_player_data)
 
-            player_info = [{
-                'player_id': player_id,
-                'name': name,
-                'position': position
-            }]
-            player_info = pd.DataFrame(player_info)
-            player_row = pd.concat([player_info, red_player_data], axis=1)
-            new_df = pd.concat([new_df, player_row]).reset_index(drop=True)
+        #Get new player row with principal components
+        red_player_data = pd.DataFrame(data=new_player_data, columns=[f'PC{i+1}' for i in range(new_player_data.shape[1])])
 
-            new_df = pd.concat([new_df, distances], axis=1)
-            sorted_df = new_df.sort_values(by='Distance')
+        #For every player in the reduced dataset calculate their cosine distance to the player
+        distances = cdist(red_player_data, new_df.drop(['player_id', 'name', 'position'], axis=1), 'cosine')
+        #Add the distances as a column to the reduced dataset
+        distances = np.transpose(distances)
+        distances = pd.DataFrame(data=distances, columns=['Distance'])
 
-            st.subheader(f"Players most similar to {name}")
-            counter = 1
-            for index, row in sorted_df.iterrows():
-                if row['player_id'] != player_id:
-                    st.write(f"{counter}. {row['name']}")
-                    counter += 1
-                    if counter > 10:
-                        break
+        #Add the player to the reduced dataset
+        player_info = pd.DataFrame([{
+            'player_id': player_id,
+            'name': name,
+            'position': position
+        }])
+        player_row = pd.concat([player_info, red_player_data], axis=1)
+        new_df = pd.concat([new_df, player_row]).reset_index(drop=True)
+        new_df = pd.concat([new_df, distances], axis=1)
+
+        #Sort the players by distance (ascending)
+        sorted_df = new_df.sort_values(by='Distance')
+
+        #Find the 10 closest matches (that aren't the player himself)
+        st.subheader(f"Players most similar to {name}")
+        counter = 1
+        for index, row in sorted_df.iterrows():
+            if row['player_id'] != player_id:
+                st.write(f"{counter}. {row['name']}")
+                counter += 1
+                if counter > 10:
+                    break
