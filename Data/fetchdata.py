@@ -42,6 +42,7 @@ def find_league_ids(countries, leagues):
         league_ids (list): A list of every league's ID.
     """
     league_ids = []
+    data = []
     #Associate the nth country with the nth league
     for country, league in zip(countries, leagues):
         #Search for the league
