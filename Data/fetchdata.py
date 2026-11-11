@@ -42,7 +42,6 @@ def find_league_ids(countries, leagues):
         league_ids (list): A list of every league's ID.
     """
     league_ids = []
-    data = []
     #Associate the nth country with the nth league
     for country, league in zip(countries, leagues):
         #Search for the league
@@ -50,9 +49,9 @@ def find_league_ids(countries, leagues):
         if response_success(response) == True:
             content = response.json()
             data = content['data']
-        for result in data:
-            if result['name'] == f'{league}':
-               league_ids.append(result['id'])
+            for result in data:
+                if result['name'] == f'{league}':
+                    league_ids.append(result['id'])
     return league_ids
 
 def find_season_ids(league_ids):
