@@ -65,7 +65,6 @@ def find_player(player):
 
         page += 1
     #Return the players that match
-    pprint(players)
     return players 
 
 def find_player_stats(player_id, name, player_stats, league_ids, season_ids):
