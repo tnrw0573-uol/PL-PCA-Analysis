@@ -14,7 +14,7 @@ from Analysis.PCA import reduce_dataset
 
 base_url = "https://api.thestatsapi.com/api/football"
 headers = {
-    'Authorization': f"Bearer {os.environ['THESTATSAPI_API_KEY']}",
+    'Authorization': f"Bearer {st.secrets['API_KEY']}",
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
