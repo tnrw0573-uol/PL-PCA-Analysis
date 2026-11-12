@@ -15,7 +15,7 @@ headers(dict): HTTP request headers that are sent with each API call.
     - Content-Type (str): The content the server is to parse the response in.
 """
 headers = {
-    'Authorization': f'Bearer {st.secrets['API_KEY']}',
+    'Authorization': f"Bearer {os.environ['THESTATSAPI_API_KEY']}",
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
@@ -45,13 +45,13 @@ def find_league_ids(countries, leagues):
     #Associate the nth country with the nth league
     for country, league in zip(countries, leagues):
         #Search for the league
-        response = requests.get(f"{base_url}/competitions", headers=headers, params={'name': f'{league}', 'country': f'{country}'})
+        response = requests.get(f"{base_url}/competitions", headers=headers, params={'search': f'{league}', 'country': f'{country}'})
         if response_success(response) == True:
             content = response.json()
             data = content['data']
-        for result in data:
-            if result['name'] == f'{league}':
-               league_ids.append(result['id'])
+            for result in data:
+                if result['name'] == f'{league}':
+                    league_ids.append(result['id'])
     return league_ids
 
 def find_season_ids(league_ids):
@@ -93,7 +93,10 @@ def find_teams(league_ids, season_ids):
             content = response.json()
             data = content['data']
             for team in data:
-                team_ids.append(team['team']['id'])
+                team_ids.append({
+                    'id': team['team']['id'],
+                    'league_id': league,
+                    'season_id': season})
     return team_ids
 
 def find_players(team_ids):
@@ -171,9 +174,9 @@ if __name__ == "__main__":
     league_ids = find_league_ids(countries, leagues)
     season_ids = find_season_ids(league_ids)
     team_ids = find_teams(league_ids, season_ids)
+    pprint(team_ids)
     players = find_players(team_ids)
     player_stats = find_player_stats(players)
-    pprint(player_stats)
     #Convert player stats to dataframe and export as a csv file
     df = pd.DataFrame(player_stats)
     #Look for stats with at least one null value and drop, I chose to drop these stats as there are only a few that need to be dropped, so it won't affect the analysis that much

@@ -20,7 +20,7 @@ headers(dict): HTTP request headers that are sent with each API call.
     - Content-Type (str): The content the server is to parse the response in.
 """
 headers = {
-    'Authorization': f'Bearer {st.secrets['API_KEY']}',
+    'Authorization': f"Bearer {os.environ['THESTATSAPI_API_KEY']}",
     'Content-Type': 'application/json'
 }
 current_year = datetime.now().year
@@ -55,8 +55,9 @@ def find_player(player):
         meta = content['meta']
 
         #Only return players that currently play in the Big 5 leagues
+        team_ids = {team['id'] for team in teams}
         for p in data:
-            if p['current_team']['id'] in teams:
+            if p['current_team']['id'] in team_ids:
                 players.append(p)
 
         if page >= meta['total_pages']:
@@ -64,6 +65,7 @@ def find_player(player):
 
         page += 1
     #Return the players that match
+    pprint(players)
     return players 
 
 def find_player_stats(player_id, name, player_stats, league_ids, season_ids):
