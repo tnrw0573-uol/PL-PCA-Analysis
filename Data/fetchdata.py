@@ -107,20 +107,20 @@ def find_players(team_ids):
     Returns:
         players (list[dict]): A list of every player consisting of their name, id, team and season.
     """
-    player_ids = []
+    players = []
     for team in team_ids:
         response = requests.get(f"{base_url}/teams/{team['id']}/players", headers=headers)
         if response_success(response) == True:
             content = response.json()
             data = content['data']
             for player in data:
-                player_ids.append({
+                players.append({
                     'name': player['name'],
                     'id': player['id'],
                     'league_id': team['league_id'],
                     'season_id': team['season_id']
                 })
-    return player_ids
+    return players
 
 def find_player_stats(players):
     """
@@ -174,7 +174,6 @@ if __name__ == "__main__":
     league_ids = find_league_ids(countries, leagues)
     season_ids = find_season_ids(league_ids)
     team_ids = find_teams(league_ids, season_ids)
-    pprint(team_ids)
     players = find_players(team_ids)
     player_stats = find_player_stats(players)
     #Convert player stats to dataframe and export as a csv file
